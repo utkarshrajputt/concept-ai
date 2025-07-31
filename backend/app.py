@@ -11,31 +11,51 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+
+# Configure CORS for production and development
+CORS(app, origins=[
+    "http://localhost:3000",  # Local development
+    "https://*.vercel.app",   # Vercel domains
+    "https://concept-ai-*.vercel.app"  # Your specific Vercel app
+])
 
 # Configuration
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-DATABASE_PATH = 'explanations.db'
+
+# Use absolute path for database in production
+import tempfile
+if os.environ.get('RENDER'):
+    # Use /tmp directory on Render (note: data won't persist between deployments)
+    DATABASE_PATH = '/tmp/explanations.db'
+else:
+    # Use local directory for development
+    DATABASE_PATH = 'explanations.db'
 
 def init_db():
-    """Initialize the SQLite database"""
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS explanations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            topic TEXT NOT NULL,
-            level TEXT NOT NULL,
-            explanation TEXT NOT NULL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(topic, level)
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
+    """Initialize the SQLite database with error handling"""
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS explanations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                topic TEXT NOT NULL,
+                level TEXT NOT NULL,
+                explanation TEXT NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(topic, level)
+            )
+        ''')
+        
+        conn.commit()
+        conn.close()
+        print(f"Database initialized successfully at {DATABASE_PATH}")
+        return True
+    except Exception as e:
+        print(f"Database initialization failed: {e}")
+        return False
 
 def normalize_topic(topic):
     """
@@ -71,40 +91,48 @@ def normalize_topic(topic):
 
 def get_cached_explanation(topic, level):
     """Check if explanation exists in cache using normalized topic"""
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    
-    # Normalize the topic for consistent lookup
-    normalized_topic = normalize_topic(topic)
-    
-    cursor.execute(
-        'SELECT explanation FROM explanations WHERE topic = ? AND level = ?',
-        (normalized_topic, level.lower())
-    )
-    
-    result = cursor.fetchone()
-    conn.close()
-    
-    return result[0] if result else None
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        
+        # Normalize the topic for consistent lookup
+        normalized_topic = normalize_topic(topic)
+        
+        cursor.execute(
+            'SELECT explanation FROM explanations WHERE topic = ? AND level = ?',
+            (normalized_topic, level.lower())
+        )
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        return result[0] if result else None
+    except Exception as e:
+        print(f"Error retrieving from cache: {e}")
+        return None
 
 def save_explanation(topic, level, explanation):
     """Save explanation to cache using normalized topic"""
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    
-    # Normalize the topic for consistent storage
-    normalized_topic = normalize_topic(topic)
-    
     try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        
+        # Normalize the topic for consistent storage
+        normalized_topic = normalize_topic(topic)
+        
         cursor.execute(
             'INSERT OR REPLACE INTO explanations (topic, level, explanation) VALUES (?, ?, ?)',
             (normalized_topic, level.lower(), explanation)
         )
         conn.commit()
+        print(f"Cached explanation for: {normalized_topic} ({level})")
     except Exception as e:
         print(f"Error saving to database: {e}")
     finally:
-        conn.close()
+        try:
+            conn.close()
+        except:
+            pass
 
 def get_ai_explanation(topic, level):
     """Get explanation from OpenRouter DeepSeek API"""
@@ -323,5 +351,17 @@ def cache_stats():
     })
 
 if __name__ == '__main__':
-    init_db()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Initialize database with error handling
+    db_initialized = init_db()
+    if not db_initialized:
+        print("Warning: Database initialization failed. App will run without database caching.")
+    
+    # Use PORT environment variable for Render deployment
+    port = int(os.environ.get('PORT', 5000))
+    debug_mode = os.environ.get('ENVIRONMENT', 'development') == 'development'
+    
+    print(f"Starting server on port {port}")
+    print(f"Database path: {DATABASE_PATH}")
+    print(f"Debug mode: {debug_mode}")
+    
+    app.run(debug=debug_mode, host='0.0.0.0', port=port)
