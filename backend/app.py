@@ -145,7 +145,11 @@ def save_explanation(topic, level, explanation):
 
 def get_ai_explanation(topic, level):
     """Get explanation from OpenRouter DeepSeek API"""
+    print(f"get_ai_explanation called with topic: {topic}, level: {level}")
+    print(f"API Key present: {bool(OPENROUTER_API_KEY)}")
+    
     if not OPENROUTER_API_KEY:
+        print("OpenRouter API key not configured")
         return None, "OpenRouter API key not configured"
     
     # Create system prompt based on difficulty level with formatting instructions
@@ -204,7 +208,13 @@ def get_ai_explanation(topic, level):
 def explain_concept():
     """Main endpoint to get concept explanations"""
     try:
+        # Debug logging
+        print(f"Received request to /explain")
+        print(f"API Key configured: {bool(OPENROUTER_API_KEY)}")
+        print(f"API Key length: {len(OPENROUTER_API_KEY) if OPENROUTER_API_KEY else 0}")
+        
         data = request.get_json()
+        print(f"Request data: {data}")
         
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
@@ -212,6 +222,8 @@ def explain_concept():
         topic = data.get('topic', '').strip()
         level = data.get('level', '').strip()
         force_refresh = data.get('force_refresh', False)  # New parameter for regeneration
+        
+        print(f"Topic: {topic}, Level: {level}, Force refresh: {force_refresh}")
         
         if not topic:
             return jsonify({'error': 'Topic is required'}), 400
@@ -228,6 +240,7 @@ def explain_concept():
         if not force_refresh:
             cached_explanation = get_cached_explanation(topic, level)
             if cached_explanation:
+                print("Returning cached explanation")
                 return jsonify({
                     'topic': topic,
                     'level': level,
@@ -237,14 +250,17 @@ def explain_concept():
                 })
         
         # Get AI explanation
+        print("Getting AI explanation...")
         explanation, error = get_ai_explanation(topic, level)
         
         if error:
+            print(f"AI explanation error: {error}")
             return jsonify({'error': error}), 500
         
         # Save to cache (replace existing if force_refresh was used)
         save_explanation(topic, level, explanation)
         
+        print("Returning fresh explanation")
         return jsonify({
             'topic': topic,
             'level': level,
@@ -254,6 +270,9 @@ def explain_concept():
         })
         
     except Exception as e:
+        print(f"Exception in explain_concept: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/analytics', methods=['GET'])
