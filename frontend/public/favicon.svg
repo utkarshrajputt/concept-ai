@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4f46e5" />
+      <stop offset="100%" style="stop-color:#7c3aed" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="15" fill="url(#gradient)" stroke="rgba(255,255,255,0.1)" stroke-width="2"/>
+  
+  <!-- Letter C for ConceptAI -->
+  <path d="M20 8c-4.4 0-8 3.6-8 8s3.6 8 8 8c2.2 0 4.2-.9 5.7-2.3l-2.8-2.8c-.8.8-1.9 1.3-3 1.3-2.2 0-4-1.8-4-4s1.8-4 4-4c1.1 0 2.1.4 2.9 1.2l2.8-2.8C24.2 8.9 22.2 8 20 8z" fill="white"/>
+  
+  <!-- Small brain dot accent -->
+  <circle cx="24" cy="12" r="1.5" fill="rgba(255,255,255,0.8)"/>
+</svg>
