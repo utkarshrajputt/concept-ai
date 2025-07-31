@@ -15,9 +15,18 @@ app = Flask(__name__)
 # Configure CORS for production and development
 CORS(app, origins=[
     "http://localhost:3000",  # Local development
-    "https://*.vercel.app",   # Vercel domains
-    "https://concept-ai-*.vercel.app"  # Your specific Vercel app
-])
+    "https://*.vercel.app",   # All Vercel domains
+    "https://concept-ai-pied.vercel.app",  # Your specific Vercel URL
+    "https://concept-ai-*.vercel.app"  # Pattern matching
+], supports_credentials=True)
+
+# Add after CORS for debugging
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 # Configuration
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
@@ -330,6 +339,17 @@ def get_suggestions():
 def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+
+@app.route('/test', methods=['GET', 'POST'])
+def test_endpoint():
+    """Simple test endpoint for debugging"""
+    return jsonify({
+        'message': 'Backend is working!',
+        'method': request.method,
+        'timestamp': datetime.now().isoformat(),
+        'headers': dict(request.headers),
+        'origin': request.headers.get('Origin', 'No origin header')
+    })
 
 @app.route('/cache/stats', methods=['GET'])
 def cache_stats():
