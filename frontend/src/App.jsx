@@ -7,7 +7,7 @@ const ThemeContext = createContext();
 const useTheme = () => useContext(ThemeContext);
 
 // API Configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://concept-ai-backend.onrender.com';
 
 const DIFFICULTY_LEVELS = [
   {
