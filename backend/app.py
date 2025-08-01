@@ -163,7 +163,7 @@ def get_ai_explanation(topic, level):
     system_prompt = level_prompts.get(level.lower(), level_prompts["student"])
     
     payload = {
-        "model": "deepseek/deepseek-chat-v3-0324:free",  # Free DeepSeek model - best of both worlds!
+        "model": "deepseek/deepseek-r1",  # Latest DeepSeek R1 - best reasoning model
         "messages": [
             {
                 "role": "system",
@@ -174,7 +174,7 @@ def get_ai_explanation(topic, level):
                 "content": f"Please explain: {topic}"
             }
         ],
-        "max_tokens": 1500,  # Optimized for free tier
+        "max_tokens": 3000,  # Increased from 1000 to allow for more comprehensive explanations
         "temperature": 0.7
     }
     
