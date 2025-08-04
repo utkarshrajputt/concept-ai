@@ -11,60 +11,38 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-
-# Configure CORS for production and development
-CORS(app, origins=[
-    "http://localhost:3000",  # Local development
-    "https://*.vercel.app",   # All Vercel domains
-    "https://concept-ai-pied.vercel.app",  # Your specific Vercel URL
-    "https://concept-ai-*.vercel.app"  # Pattern matching
-], supports_credentials=True)
-
-# Add after CORS for debugging
-@app.after_request
-def after_request(response):
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    return response
+CORS(app)  # Enable CORS for all routes
 
 # Configuration
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+DATABASE_PATH = 'explanations.db'
 
-# Use absolute path for database in production
-import tempfile
-if os.environ.get('RENDER'):
-    # Use /tmp directory on Render (note: data won't persist between deployments)
-    DATABASE_PATH = '/tmp/explanations.db'
+# Debug: Check if API key is loaded
+print(f"OPENROUTER_API_KEY loaded: {'Yes' if OPENROUTER_API_KEY else 'No'}")
+if OPENROUTER_API_KEY:
+    print(f"API Key starts with: {OPENROUTER_API_KEY[:10]}...")
 else:
-    # Use local directory for development
-    DATABASE_PATH = 'explanations.db'
+    print("ERROR: No API key found in environment variables")
 
 def init_db():
-    """Initialize the SQLite database with error handling"""
-    try:
-        conn = sqlite3.connect(DATABASE_PATH)
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS explanations (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                topic TEXT NOT NULL,
-                level TEXT NOT NULL,
-                explanation TEXT NOT NULL,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(topic, level)
-            )
-        ''')
-        
-        conn.commit()
-        conn.close()
-        print(f"Database initialized successfully at {DATABASE_PATH}")
-        return True
-    except Exception as e:
-        print(f"Database initialization failed: {e}")
-        return False
+    """Initialize the SQLite database"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS explanations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            topic TEXT NOT NULL,
+            level TEXT NOT NULL,
+            explanation TEXT NOT NULL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(topic, level)
+        )
+    ''')
+    
+    conn.commit()
+    conn.close()
 
 def normalize_topic(topic):
     """
@@ -100,57 +78,50 @@ def normalize_topic(topic):
 
 def get_cached_explanation(topic, level):
     """Check if explanation exists in cache using normalized topic"""
-    try:
-        conn = sqlite3.connect(DATABASE_PATH)
-        cursor = conn.cursor()
-        
-        # Normalize the topic for consistent lookup
-        normalized_topic = normalize_topic(topic)
-        
-        cursor.execute(
-            'SELECT explanation FROM explanations WHERE topic = ? AND level = ?',
-            (normalized_topic, level.lower())
-        )
-        
-        result = cursor.fetchone()
-        conn.close()
-        
-        return result[0] if result else None
-    except Exception as e:
-        print(f"Error retrieving from cache: {e}")
-        return None
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    # Normalize the topic for consistent lookup
+    normalized_topic = normalize_topic(topic)
+    
+    cursor.execute(
+        'SELECT explanation FROM explanations WHERE topic = ? AND level = ?',
+        (normalized_topic, level.lower())
+    )
+    
+    result = cursor.fetchone()
+    conn.close()
+    
+    return result[0] if result else None
 
 def save_explanation(topic, level, explanation):
     """Save explanation to cache using normalized topic"""
+    conn = sqlite3.connect(DATABASE_PATH)
+    cursor = conn.cursor()
+    
+    # Normalize the topic for consistent storage
+    normalized_topic = normalize_topic(topic)
+    
     try:
-        conn = sqlite3.connect(DATABASE_PATH)
-        cursor = conn.cursor()
-        
-        # Normalize the topic for consistent storage
-        normalized_topic = normalize_topic(topic)
-        
         cursor.execute(
             'INSERT OR REPLACE INTO explanations (topic, level, explanation) VALUES (?, ?, ?)',
             (normalized_topic, level.lower(), explanation)
         )
         conn.commit()
-        print(f"Cached explanation for: {normalized_topic} ({level})")
     except Exception as e:
         print(f"Error saving to database: {e}")
     finally:
-        try:
-            conn.close()
-        except:
-            pass
+        conn.close()
 
 def get_ai_explanation(topic, level):
     """Get explanation from OpenRouter DeepSeek API"""
-    print(f"get_ai_explanation called with topic: {topic}, level: {level}")
-    print(f"API Key present: {bool(OPENROUTER_API_KEY)}")
+    print(f"DEBUG: get_ai_explanation called with topic='{topic}', level='{level}'")
     
     if not OPENROUTER_API_KEY:
-        print("OpenRouter API key not configured")
+        print("ERROR: OpenRouter API key not configured")
         return None, "OpenRouter API key not configured"
+    
+    print(f"DEBUG: API key is configured, making request to OpenRouter...")
     
     # Create system prompt based on difficulty level with formatting instructions
     level_prompts = {
@@ -163,7 +134,7 @@ def get_ai_explanation(topic, level):
     system_prompt = level_prompts.get(level.lower(), level_prompts["student"])
     
     payload = {
-        "model": "deepseek/deepseek-r1",  # Latest DeepSeek R1 - best reasoning model
+        "model": "deepseek/deepseek-r1",
         "messages": [
             {
                 "role": "system",
@@ -208,13 +179,7 @@ def get_ai_explanation(topic, level):
 def explain_concept():
     """Main endpoint to get concept explanations"""
     try:
-        # Debug logging
-        print(f"Received request to /explain")
-        print(f"API Key configured: {bool(OPENROUTER_API_KEY)}")
-        print(f"API Key length: {len(OPENROUTER_API_KEY) if OPENROUTER_API_KEY else 0}")
-        
         data = request.get_json()
-        print(f"Request data: {data}")
         
         if not data:
             return jsonify({'error': 'No JSON data provided'}), 400
@@ -222,8 +187,6 @@ def explain_concept():
         topic = data.get('topic', '').strip()
         level = data.get('level', '').strip()
         force_refresh = data.get('force_refresh', False)  # New parameter for regeneration
-        
-        print(f"Topic: {topic}, Level: {level}, Force refresh: {force_refresh}")
         
         if not topic:
             return jsonify({'error': 'Topic is required'}), 400
@@ -240,7 +203,6 @@ def explain_concept():
         if not force_refresh:
             cached_explanation = get_cached_explanation(topic, level)
             if cached_explanation:
-                print("Returning cached explanation")
                 return jsonify({
                     'topic': topic,
                     'level': level,
@@ -250,17 +212,14 @@ def explain_concept():
                 })
         
         # Get AI explanation
-        print("Getting AI explanation...")
         explanation, error = get_ai_explanation(topic, level)
         
         if error:
-            print(f"AI explanation error: {error}")
             return jsonify({'error': error}), 500
         
         # Save to cache (replace existing if force_refresh was used)
         save_explanation(topic, level, explanation)
         
-        print("Returning fresh explanation")
         return jsonify({
             'topic': topic,
             'level': level,
@@ -270,9 +229,6 @@ def explain_concept():
         })
         
     except Exception as e:
-        print(f"Exception in explain_concept: {str(e)}")
-        import traceback
-        traceback.print_exc()
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/analytics', methods=['GET'])
@@ -359,17 +315,6 @@ def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
 
-@app.route('/test', methods=['GET', 'POST'])
-def test_endpoint():
-    """Simple test endpoint for debugging"""
-    return jsonify({
-        'message': 'Backend is working!',
-        'method': request.method,
-        'timestamp': datetime.now().isoformat(),
-        'headers': dict(request.headers),
-        'origin': request.headers.get('Origin', 'No origin header')
-    })
-
 @app.route('/cache/stats', methods=['GET'])
 def cache_stats():
     """Get cache statistics"""
@@ -390,17 +335,5 @@ def cache_stats():
     })
 
 if __name__ == '__main__':
-    # Initialize database with error handling
-    db_initialized = init_db()
-    if not db_initialized:
-        print("Warning: Database initialization failed. App will run without database caching.")
-    
-    # Use PORT environment variable for Render deployment
-    port = int(os.environ.get('PORT', 5000))
-    debug_mode = os.environ.get('ENVIRONMENT', 'development') == 'development'
-    
-    print(f"Starting server on port {port}")
-    print(f"Database path: {DATABASE_PATH}")
-    print(f"Debug mode: {debug_mode}")
-    
-    app.run(debug=debug_mode, host='0.0.0.0', port=port)
+    init_db()
+    app.run(debug=True, host='0.0.0.0', port=5000)

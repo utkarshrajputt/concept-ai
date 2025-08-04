@@ -7,7 +7,7 @@ const ThemeContext = createContext();
 const useTheme = () => useContext(ThemeContext);
 
 // API Configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://concept-ai-backend.onrender.com';
+const API_BASE_URL = 'http://localhost:5000';
 
 const DIFFICULTY_LEVELS = [
   {
@@ -886,11 +886,14 @@ function App() {
     // Retry logic with exponential backoff
     const maxRetries = 3;
     let attempt = 0;
+    let timeoutId; // Declare timeoutId variable
     
     while (attempt <= maxRetries) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        timeoutId = setTimeout(() => controller.abort(), 60000); // Increased to 60 second timeout
+        
+        console.log(`Making request to ${API_BASE_URL}/explain - Attempt ${attempt + 1}`);
         
         const response = await fetch(`${API_BASE_URL}/explain`, {
           method: 'POST',
@@ -908,6 +911,7 @@ function App() {
         });
 
         clearTimeout(timeoutId);
+        console.log(`Response received:`, response.status, response.statusText);
 
         if (!response.ok) {
           // Handle specific HTTP errors
@@ -977,10 +981,18 @@ function App() {
 
       } catch (err) {
         console.error(`Attempt ${attempt + 1} failed:`, err);
+        clearTimeout(timeoutId); // Ensure timeout is cleared
         recordRequest(false); // Record failed request
         
         if (err.name === 'AbortError') {
-          setError('Request timed out. Please check your connection and try again.');
+          console.log('Request was aborted (likely timeout)');
+          setError('Request timed out. The server might be busy. Please try again.');
+          break;
+        }
+        
+        // Handle network errors specifically
+        if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          setError('Network error. Please check if the backend server is running on port 5000.');
           break;
         }
         
@@ -2204,71 +2216,7 @@ function App() {
                 </button>
               </div>
             </div>
-                        // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
             
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';            // Line 8 - Replace this:
-            const API_BASE_URL = 'http://localhost:5000';
-            
-            // With this:
-            const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
             <div className="flex-1 overflow-y-auto max-h-96">
               {localHistory.length === 0 ? (
                 <div className="p-8 text-center">
