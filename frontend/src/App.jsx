@@ -470,15 +470,10 @@ const formatExplanation = (text) => {
     </div>`;
   });
 
-  // Handle inline bullet points (like "* text" in the middle of content)
-  formatted = formatted.replace(/(\s|^)\*\s+([^*\n]+?)(\s|$)/g, (match, prefix, content, suffix) => {
-    return `${prefix}<span class="inline-bullet flex items-center">
-      <span class="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2 flex-shrink-0"></span>
-      <span class="text-gray-700">${content.trim()}</span>
-    </span>${suffix}`;
-  });
+  // REMOVED: Handle inline bullet points to prevent asterisk processing
+  // This was converting "θ-*join" to "θ-<bullet>join"
 
-  // Step 6: Handle code blocks with proper language detection
+  // Step 6: Handle code blocks with proper language detection FIRST (before text formatting)
   // First handle code blocks with language specifiers (with or without newline)
   formatted = formatted.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
     const language = lang || 'text';
@@ -487,15 +482,13 @@ const formatExplanation = (text) => {
     return `<div class="code-block my-6 rounded-lg overflow-hidden border border-gray-300 shadow-lg">
       <div class="bg-gray-800 text-white px-4 py-2 text-sm font-medium flex items-center justify-between">
         <span class="text-gray-300 flex items-center">
-          <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-          </svg>
+          <span class="text-xs font-bold mr-2">&lt;/&gt;</span>
           ${language}
         </span>
         <div class="flex space-x-1">
-          <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-          <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-          <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+          <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+          <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+          <div class="w-2 h-2 bg-green-500 rounded-full"></div>
         </div>
       </div>
       <pre class="bg-gray-900 text-green-400 p-4 overflow-x-auto text-sm font-mono leading-relaxed whitespace-pre-wrap"><code>${trimmedCode}</code></pre>
@@ -513,36 +506,42 @@ const formatExplanation = (text) => {
     return `<div class="code-block my-6 rounded-lg overflow-hidden border border-gray-300 shadow-lg">
       <div class="bg-gray-800 text-white px-4 py-2 text-sm font-medium flex items-center justify-between">
         <span class="text-gray-300 flex items-center">
-          <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-          </svg>
+          <span class="text-xs font-bold mr-2">&lt;/&gt;</span>
           code
         </span>
         <div class="flex space-x-1">
-          <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-          <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-          <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+          <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+          <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+          <div class="w-2 h-2 bg-green-500 rounded-full"></div>
         </div>
       </div>
       <pre class="bg-gray-900 text-green-400 p-4 overflow-x-auto text-sm font-mono leading-relaxed whitespace-pre-wrap"><code>${trimmedCode}</code></pre>
     </div>`;
   });
 
-  // Inline code
+  // Inline code FIRST (to protect SQL syntax like SELECT * FROM)
   formatted = formatted.replace(/`([^`\n]+)`/g, 
     '<code class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded text-sm font-mono border border-gray-300 dark:border-gray-600">$1</code>'
   );
 
-  // Step 7: Handle text formatting
-  // Bold text (** or __)
-  formatted = formatted.replace(/(\*\*|__)((?!\s)[^*_\n]*(?<!\s))\1/g, 
-    '<strong class="font-semibold text-gray-900">$2</strong>'
+  // Step 7: Handle text formatting (AFTER code blocks to avoid interfering with SQL)
+  
+  // Bold text (** or __) - Only process clear markdown patterns
+  formatted = formatted.replace(/\*\*([^*\n<>]+?)\*\*/g, 
+    '<strong class="font-semibold text-gray-900">$1</strong>'
+  );
+  
+  formatted = formatted.replace(/__([^_\n<>]+?)__/g, 
+    '<strong class="font-semibold text-gray-900">$1</strong>'
   );
 
-  // Italic text (* or _)
-  formatted = formatted.replace(/(\*|_)((?!\s)[^*_\n]*(?<!\s))\1/g, 
+  // Italic text - ONLY underscore version to completely avoid asterisk conflicts
+  // This removes all single asterisk italic processing
+  formatted = formatted.replace(/(?<![\w])_([^_\n<>]+?)_(?![\w])/g, 
     '<em class="italic text-gray-700">$1</em>'
   );
+
+  // NO single asterisk processing at all to preserve SQL and mathematical symbols
 
   // Step 8: Handle blockquotes
   formatted = formatted.replace(/^>\s+(.+)$/gm, 
@@ -699,36 +698,6 @@ const ThemeProvider = ({ children }) => {
   );
 };
 
-// Export utilities
-const exportToPDF = (content, title) => {
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>${title}</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; }
-          .header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; }
-          .content { line-height: 1.6; }
-          table { border-collapse: collapse; width: 100%; margin: 10px 0; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; }
-          code { background: #f4f4f4; padding: 2px 4px; border-radius: 3px; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>${title}</h1>
-          <p>Generated on ${new Date().toLocaleString()}</p>
-        </div>
-        <div class="content">${content}</div>
-      </body>
-    </html>
-  `);
-  printWindow.document.close();
-  printWindow.print();
-};
-
 const exportToJSON = (data, filename) => {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -806,6 +775,11 @@ function App() {
   const [cached, setCached] = useState(false);
   const [regenerated, setRegenerated] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportSuccess, setExportSuccess] = useState(false);
+  const [showPDFPreview, setShowPDFPreview] = useState(false);
+  const [pdfContent, setPdfContent] = useState('');
+  const [pdfTitle, setPdfTitle] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
@@ -818,6 +792,512 @@ function App() {
   const [metadata, setMetadata] = useState({});
   const [topicInputRef, setTopicInputRef] = useState(null);
   const [levelChanged, setLevelChanged] = useState(false);
+  
+  // Mobile-specific states
+  const [mobileOptionsExpanded, setMobileOptionsExpanded] = useState(false);
+  const [mobileRecentExpanded, setMobileRecentExpanded] = useState(false);
+  
+  // UI Enhancement states
+  const [fontSize, setFontSize] = useState(16);
+  const [readingProgress, setReadingProgress] = useState(0);
+
+  // Enhanced PDF Export with Preview Modal
+  const exportToPDF = async (content, title) => {
+    setExportLoading(true);
+    
+    try {
+      // Clean and properly format HTML content for PDF
+      let cleanContent = content
+        // Fix code blocks - ensure proper pre/code structure
+        .replace(/<pre><code class="language-([^"]*)">/g, '<pre class="code-block" data-language="$1"><code>')
+        .replace(/<pre><code>/g, '<pre class="code-block"><code>')
+        .replace(/<\/code><\/pre>/g, '</code></pre>')
+        
+        // Fix inline code
+        .replace(/<code([^>]*)>/g, '<code class="inline-code"$1>')
+        
+        // Fix bullet points and lists
+        .replace(/<ul>/g, '<ul class="pdf-list">')
+        .replace(/<ol>/g, '<ol class="pdf-list">')
+        .replace(/<li>/g, '<li class="pdf-list-item">')
+        
+        // Fix table formatting
+        .replace(/<div class="table-container[^>]*>/g, '<div class="pdf-table-container">')
+        .replace(/<div class="table-header[^>]*>/g, '<div class="pdf-table-header">')
+        .replace(/<div class="table-row[^>]*>/g, '<div class="pdf-table-row">')
+        .replace(/<div class="table-header-cell[^>]*>/g, '<div class="pdf-header-cell">')
+        .replace(/<div class="table-cell[^>]*>/g, '<div class="pdf-cell">')
+        
+        // Fix headings
+        .replace(/<h([1-6])([^>]*)>/g, '<h$1 class="pdf-heading-$1"$2>')
+        
+        // Fix paragraphs
+        .replace(/<p>/g, '<p class="pdf-paragraph">');
+      
+      // Store content for preview
+      setPdfContent(cleanContent);
+      setPdfTitle(title);
+      setShowPDFPreview(true);
+      
+    } catch (error) {
+      console.error('Export preparation failed:', error);
+      alert('Failed to prepare PDF. Please try again.');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  // Actual PDF download function
+  const downloadPDF = async () => {
+    setExportLoading(true);
+    
+    try {
+      // Get current level info
+      const currentLevel = DIFFICULTY_LEVELS.find(l => l.value === level);
+      const levelLabel = currentLevel?.label || 'Student';
+      
+      // Ensure we have content and properly format it
+      const contentToExport = explanation || 'No content available.';
+      const formattedContent = formatExplanation(contentToExport);
+      
+      // Create the complete HTML document optimized for PDF
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>${pdfTitle} - ConceptAI</title>
+            <meta charset="UTF-8">
+            <style>
+              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap');
+              
+              * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+              }
+              
+              body {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                line-height: 1.7;
+                color: #1f2937;
+                background: #ffffff;
+                font-size: 14px;
+                padding: 30px;
+              }
+              
+              .page {
+                max-width: 800px;
+                margin: 0 auto;
+                background: white;
+              }
+              
+              /* Header Styling */
+              .pdf-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 24px;
+                border-bottom: 3px solid #6366f1;
+                margin-bottom: 40px;
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                border-radius: 12px;
+              }
+              
+              .logo-section {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+              }
+              
+              .logo {
+                width: 48px;
+                height: 48px;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 700;
+                font-size: 20px;
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+              }
+              
+              .brand-info h1 {
+                font-size: 24px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 4px;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+              }
+              
+              .brand-info p {
+                font-size: 14px;
+                color: #6b7280;
+                font-weight: 500;
+              }
+              
+              .document-info {
+                text-align: right;
+              }
+              
+              .level-badge {
+                display: inline-block;
+                padding: 6px 14px;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                color: white;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 8px;
+                box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+              }
+              
+              .generation-date {
+                font-size: 12px;
+                color: #6b7280;
+                font-weight: 500;
+              }
+              
+              /* Content Title - Simplified for PDF */
+              .content-title {
+                font-size: 28px;
+                font-weight: 700;
+                color: #1f2937;
+                margin: 25px 0 30px 0;
+                padding: 20px 25px;
+                background-color: #6366f1;
+                color: white;
+                text-align: center;
+                border-radius: 8px;
+                page-break-inside: avoid;
+              }
+              
+              /* Enhanced PDF Header - Simplified for better PDF rendering */
+              .pdf-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 25px 30px;
+                border-bottom: 3px solid #6366f1;
+                margin-bottom: 30px;
+                background-color: #f8fafc;
+                border-radius: 10px;
+                page-break-inside: avoid;
+              }
+              
+              .logo-section {
+                display: flex;
+                align-items: center;
+                gap: 15px;
+              }
+              
+              .logo {
+                width: 45px;
+                height: 45px;
+                background-color: #6366f1;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 700;
+                font-size: 18px;
+              }
+              
+              .brand-info h1 {
+                font-size: 24px;
+                font-weight: 700;
+                color: #1f2937;
+                margin: 0 0 3px 0;
+              }
+              
+              .brand-info p {
+                font-size: 13px;
+                color: #6b7280;
+                font-weight: 500;
+                margin: 0;
+              }
+              
+              .document-info {
+                text-align: right;
+              }
+              
+              .level-badge {
+                display: inline-block;
+                padding: 5px 12px;
+                background-color: #6366f1;
+                color: white;
+                border-radius: 15px;
+                font-size: 11px;
+                font-weight: 600;
+                margin-bottom: 5px;
+              }
+              
+              .generation-date {
+                font-size: 11px;
+                color: #6b7280;
+                font-weight: 500;
+                margin: 0;
+              }
+              
+              /* Content Styling */
+              .pdf-content {
+                font-size: 14px;
+                line-height: 1.8;
+                color: #374151;
+              }
+              
+              /* Headings */
+              .pdf-heading-1, .pdf-heading-2, .pdf-heading-3, .pdf-heading-4, .pdf-heading-5, .pdf-heading-6 {
+                font-weight: 600;
+                margin-top: 28px;
+                margin-bottom: 14px;
+                color: #1f2937;
+                page-break-after: avoid;
+              }
+              
+              .pdf-heading-1 { font-size: 26px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; }
+              .pdf-heading-2 { font-size: 22px; color: #4338ca; }
+              .pdf-heading-3 { font-size: 19px; color: #6366f1; }
+              .pdf-heading-4 { font-size: 17px; color: #7c3aed; }
+              .pdf-heading-5 { font-size: 15px; color: #8b5cf6; }
+              .pdf-heading-6 { font-size: 14px; color: #9333ea; }
+              
+              /* Paragraphs */
+              .pdf-paragraph {
+                margin-bottom: 16px;
+                text-align: justify;
+                text-justify: inter-word;
+              }
+              
+              /* Lists - Enhanced formatting */
+              .pdf-list {
+                margin: 18px 0;
+                padding-left: 0;
+              }
+              
+              .pdf-list.pdf-list {
+                margin-left: 22px;
+              }
+              
+              .pdf-list-item {
+                margin-bottom: 10px;
+                line-height: 1.7;
+                position: relative;
+              }
+              
+              ul.pdf-list .pdf-list-item {
+                list-style: none;
+                padding-left: 18px;
+              }
+              
+              ul.pdf-list .pdf-list-item::before {
+                content: "•";
+                color: #6366f1;
+                font-weight: bold;
+                font-size: 14px;
+                position: absolute;
+                left: 0;
+                top: 0;
+              }
+              
+              ol.pdf-list .pdf-list-item {
+                list-style: decimal;
+                list-style-position: outside;
+                margin-left: 4px;
+              }
+              
+              /* Code Blocks */
+              .code-block {
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                border: 2px solid #e2e8f0;
+                border-radius: 10px;
+                padding: 16px;
+                margin: 20px 0;
+                overflow-x: auto;
+                font-family: 'Fira Code', Consolas, 'Courier New', monospace;
+                font-size: 12px;
+                line-height: 1.5;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                position: relative;
+              }
+              
+              .code-block::before {
+                content: attr(data-language);
+                position: absolute;
+                top: -1px;
+                right: 10px;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                color: white;
+                padding: 3px 10px;
+                border-radius: 0 0 6px 6px;
+                font-size: 10px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              }
+              
+              .code-block code {
+                background: none !important;
+                border: none !important;
+                padding: 0 !important;
+                font-family: inherit;
+                font-size: inherit;
+                color: #1f2937;
+                display: block;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+              }
+              
+              /* Inline Code */
+              .inline-code {
+                background: linear-gradient(135deg, #f1f5f9, #e0e7ff);
+                color: #3730a3;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-family: 'Fira Code', Consolas, monospace;
+                font-size: 12px;
+                border: 1px solid #c7d2fe;
+                font-weight: 500;
+              }
+              
+              /* Footer */
+              .pdf-footer {
+                margin-top: 50px;
+                padding-top: 20px;
+                border-top: 2px solid #e5e7eb;
+                text-align: center;
+                color: #6b7280;
+                font-size: 12px;
+              }
+              
+              .footer-logo {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 10px;
+              }
+              
+              .footer-logo-icon {
+                width: 24px;
+                height: 24px;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                border-radius: 6px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 600;
+                font-size: 12px;
+              }
+              
+              /* Print optimization */
+              @media print {
+                body { padding: 20px; }
+                .pdf-heading-1, .pdf-heading-2, .pdf-heading-3 { page-break-after: avoid; }
+                .code-block { page-break-inside: avoid; }
+                .pdf-list-item { page-break-inside: avoid; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="page">
+              <!-- Professional Header -->
+              <div class="pdf-header">
+                <div class="logo-section">
+                  <div class="logo">C</div>
+                  <div class="brand-info">
+                    <h1>ConceptAI</h1>
+                    <p>Intelligent Explanations</p>
+                  </div>
+                </div>
+                <div class="document-info">
+                  <div class="level-badge">${levelLabel} Level</div>
+                  <div class="generation-date">Generated on ${new Date().toLocaleDateString('en-US', { 
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}</div>
+                </div>
+              </div>
+              
+              <!-- Content Title -->
+              <div class="content-title">${topic || 'ConceptAI Explanation'}</div>
+              
+              <!-- Main Content -->
+              <div class="pdf-content">
+                ${formattedContent}
+              </div>
+              
+              <!-- Professional Footer -->
+              <div class="pdf-footer">
+                <div class="footer-logo">
+                  <div class="footer-logo-icon">C</div>
+                  <span style="font-weight: 600; color: #374151;">ConceptAI - Powered by AI</span>
+                </div>
+                <p>Making complex concepts simple and accessible for everyone.</p>
+                <p style="margin-top: 8px; font-size: 11px;">Generated with ❤️ by ConceptAI • Visit us for more learning resources</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `;
+      
+      // Open in new window for PDF conversion
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        throw new Error('Popup blocked! Please allow popups for this site to download PDF.');
+      }
+      
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      
+      // Wait for content to load
+      printWindow.onload = () => {
+        setTimeout(() => {
+          try {
+            printWindow.print();
+            setExportSuccess(true);
+            setShowPDFPreview(false);
+            setTimeout(() => setExportSuccess(false), 3000);
+          } catch (printError) {
+            console.error('Print failed:', printError);
+            printWindow.close();
+            throw new Error('Print dialog failed to open. Please try again.');
+          }
+        }, 500);
+      };
+      
+      // Fallback if onload doesn't trigger
+      setTimeout(() => {
+        if (printWindow && !printWindow.closed) {
+          try {
+            printWindow.print();
+            setExportSuccess(true);
+            setShowPDFPreview(false);
+            setTimeout(() => setExportSuccess(false), 3000);
+          } catch (printError) {
+            console.error('Fallback print failed:', printError);
+            printWindow.close();
+            throw new Error('Print dialog failed to open. Please try again.');
+          }
+        }
+      }, 2000);
+      
+    } catch (error) {
+      console.error('PDF download failed:', error);
+      alert(error.message || 'Failed to download PDF. Please try again.');
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   // Helper function to change level with visual feedback
   const changeLevelWithFeedback = (newLevel, currentLevel) => {
@@ -1064,6 +1544,15 @@ function App() {
     if (shouldRegenerate) {
       handleSubmit(null, true);  // Call handleSubmit with forceRefresh = true
     }
+  };
+
+  // Reading progress handler for scroll tracking
+  const handleExplanationScroll = (e) => {
+    const element = e.target;
+    const scrollTop = element.scrollTop;
+    const scrollHeight = element.scrollHeight - element.clientHeight;
+    const progress = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+    setReadingProgress(Math.min(100, Math.max(0, progress)));
   };
 
   // 📚 LOCAL HISTORY MANAGEMENT SYSTEM
@@ -1465,15 +1954,15 @@ function App() {
               
               {/* Essential buttons - always visible */}
               <button
-                onClick={() => setShowHistory(true)}
+                onClick={openAnalytics}
                 className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 group ${
                   darkMode 
                     ? 'text-gray-400 hover:text-indigo-400 hover:bg-gray-800' 
                     : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'
                 }`}
-                title="Search History"
+                title="Usage Analytics"
               >
-                <History className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
+                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
               </button>
               
               <button
@@ -1495,6 +1984,18 @@ function App() {
               {/* Secondary buttons - hidden on mobile */}
               <div className="hidden sm:flex items-center space-x-2">
                 <button
+                  onClick={() => setShowHistory(true)}
+                  className={`p-2 rounded-lg transition-all duration-200 group ${
+                    darkMode 
+                      ? 'text-gray-400 hover:text-indigo-400 hover:bg-gray-800' 
+                      : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'
+                  }`}
+                  title="Search History"
+                >
+                  <History className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                </button>
+                
+                <button
                   onClick={() => setShowShortcuts(true)}
                   className={`p-2 rounded-lg transition-all duration-200 group ${
                     darkMode 
@@ -1505,35 +2006,27 @@ function App() {
                 >
                   <Keyboard className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 </button>
-                
-                <button
-                  onClick={openAnalytics}
-                  className={`p-2 rounded-lg transition-all duration-200 group ${
-                    darkMode 
-                      ? 'text-gray-400 hover:text-indigo-400 hover:bg-gray-800' 
-                      : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'
-                  }`}
-                  title="Usage Analytics"
-                >
-                  <BarChart3 className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                </button>
               </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Responsive Layout */}
+      {/* Responsive Layout - Mobile optimized, Desktop unchanged */}
       <div className="flex flex-col lg:flex-row min-h-[calc(100vh-64px)] sm:min-h-[calc(100vh-80px)]">
-        {/* Left Sidebar - Input & Controls */}
-        <div className={`w-full lg:w-96 lg:min-w-96 backdrop-blur-sm border-b lg:border-b-0 lg:border-r border-opacity-20 p-4 sm:p-6 lg:overflow-y-auto transition-colors duration-300 ${
+        {/* Left Sidebar - Desktop: same as before, Mobile: optimized */}
+        <div className={`w-full lg:w-80 lg:min-w-80 backdrop-blur-sm border-b lg:border-b-0 lg:border-r border-opacity-20 transition-colors duration-300 ${
           darkMode 
             ? 'bg-gray-900/40 border-gray-700' 
             : 'bg-white/60 border-white'
+        } ${
+          // Mobile-specific: make sidebar more compact and responsive
+          'lg:p-3 lg:sm:p-4 lg:overflow-y-auto ' +
+          'p-2 pb-3 overflow-y-auto max-h-[40vh] lg:max-h-none'
         }`}>
-          <div className="space-y-4 sm:space-y-6">
-            {/* Topic Input with Suggestions */}
-            <div className="space-y-2 sm:space-y-3">
+          <div className="space-y-2 lg:space-y-3 lg:sm:space-y-4">
+            {/* Topic Input with Suggestions - More compact */}
+            <div className="space-y-1.5 lg:space-y-2">
               <label className={`block text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
                 What would you like to learn?
               </label>
@@ -1547,14 +2040,14 @@ function App() {
                   onBlur={handleInputBlur}
                   onKeyDown={handleKeyDown}
                   placeholder="Enter any concept... (Ctrl+K to focus)"
-                  className={`w-full pl-3 sm:pl-4 pr-10 sm:pr-12 py-2.5 sm:py-3 text-sm border rounded-lg sm:rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 backdrop-blur-sm placeholder-gray-400 ${
+                  className={`w-full pl-3 pr-10 py-2 lg:pl-4 lg:pr-12 lg:py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 backdrop-blur-sm placeholder-gray-400 ${
                     darkMode 
                       ? 'bg-gray-800/80 border-gray-700 text-white' 
                       : 'bg-white/80 border-gray-200 text-gray-900'
                   } ${!topic.trim() && topic.length > 0 ? 'border-red-300 focus:ring-red-300' : ''}`}
                   disabled={loading}
                 />
-                <Sparkles className="absolute right-2.5 sm:right-3 top-2.5 sm:top-3 w-4 h-4 text-indigo-400 pointer-events-none" />
+                <Sparkles className="absolute right-2.5 top-2.5 lg:right-3 lg:top-3 w-4 h-4 text-indigo-400 pointer-events-none" />
                 
                 {/* Enhanced Suggestions Dropdown */}
                 {showSuggestions && suggestions.length > 0 && (
@@ -1689,47 +2182,132 @@ function App() {
               </div>
             </div>
 
-            {/* Difficulty Levels */}
-            <div className="space-y-2 sm:space-y-3">
-              <label className={`block text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                Choose explanation level
-              </label>
-              <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 sm:gap-3 lg:space-y-2">
-                {DIFFICULTY_LEVELS.map((diffLevel) => {
+            {/* Enhanced Difficulty Levels - Desktop: full, Mobile: collapsible */}
+            <div className="space-y-1.5 lg:space-y-2">
+              {/* Mobile: Compact level indicator + expand button */}
+              <div className="lg:hidden">
+                <div className="flex items-center justify-between">
+                  <div className={`text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                    Level: {DIFFICULTY_LEVELS.find(l => l.value === level)?.label || 'Student'}
+                  </div>
+                  <button
+                    onClick={() => setMobileOptionsExpanded(!mobileOptionsExpanded)}
+                    className={`flex items-center space-x-1 text-xs px-2 py-1 rounded-md transition-colors ${
+                      darkMode 
+                        ? 'text-indigo-400 hover:text-indigo-300 bg-gray-800/50 hover:bg-gray-700/50' 
+                        : 'text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100'
+                    }`}
+                  >
+                    <span>{mobileOptionsExpanded ? 'Less' : 'More'}</span>
+                    <ChevronRight className={`w-3 h-3 transition-transform ${mobileOptionsExpanded ? 'rotate-90' : ''}`} />
+                  </button>
+                </div>
+                
+                {/* Mobile: Quick level selector when collapsed */}
+                {!mobileOptionsExpanded && (
+                  <div className="flex space-x-1 mt-1.5">
+                    {DIFFICULTY_LEVELS.map((diffLevel) => (
+                      <button
+                        key={diffLevel.value}
+                        onClick={() => changeLevelWithFeedback(diffLevel.value, level)}
+                        className={`flex-1 py-2 px-1 text-xs rounded-md transition-all duration-200 ${
+                          level === diffLevel.value
+                            ? `bg-gradient-to-r ${diffLevel.color} text-white shadow-md`
+                            : darkMode 
+                              ? 'bg-gray-800/60 text-gray-300 hover:bg-gray-700/60' 
+                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {diffLevel.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop: Full layout (unchanged) + Mobile: Expanded view */}
+              <div className={`${mobileOptionsExpanded ? 'block' : 'hidden'} lg:block`}>
+                <div className="flex items-center justify-between">
+                  <label className={`block text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                    Choose explanation level
+                  </label>
+                  {/* Progress indicator */}
+                  <div className="flex items-center space-x-1">
+                    {DIFFICULTY_LEVELS.map((diffLevel, index) => (
+                      <div
+                        key={diffLevel.value}
+                        className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                          DIFFICULTY_LEVELS.findIndex(l => l.value === level) >= index
+                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500'
+                            : darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 mt-2">
+                {DIFFICULTY_LEVELS.map((diffLevel, index) => {
                   const IconComponent = diffLevel.icon;
+                  const isSelected = level === diffLevel.value;
+                  const estimatedTime = ['2-3 min', '4-5 min', '6-8 min', '8-10 min'][index];
+                  
                   return (
                     <button
                       key={diffLevel.value}
                       onClick={() => changeLevelWithFeedback(diffLevel.value, level)}
                       disabled={loading}
-                      className={`w-full p-3 sm:p-4 rounded-lg sm:rounded-xl border-2 transition-all duration-200 text-left ${
-                        level === diffLevel.value
-                          ? `border-transparent bg-gradient-to-r ${diffLevel.color} text-white shadow-lg transform scale-105`
+                      className={`group relative w-full p-2.5 sm:p-3 rounded-lg border-2 transition-all duration-300 text-left overflow-hidden ${
+                        isSelected
+                          ? `border-transparent bg-gradient-to-r ${diffLevel.color} text-white shadow-lg transform scale-105 shadow-indigo-500/25`
                           : darkMode 
-                            ? 'border-gray-600 bg-gray-800/80 hover:border-gray-500 hover:bg-gray-800 text-gray-200'
-                            : 'border-gray-200 bg-white/80 hover:border-gray-300 hover:bg-white text-gray-700'
-                      } ${levelChanged && level === diffLevel.value ? 'animate-pulse ring-4 ring-blue-400/50' : ''}`}
+                            ? 'border-gray-600 bg-gray-800/80 hover:border-gray-500 hover:bg-gray-800 text-gray-200 hover:shadow-lg'
+                            : 'border-gray-200 bg-white/80 hover:border-gray-300 hover:bg-white text-gray-700 hover:shadow-lg'
+                      } ${levelChanged && isSelected ? 'animate-pulse ring-4 ring-blue-400/50' : ''}`}
                     >
-                      <div className="flex items-center space-x-2 sm:space-x-3">
-                        <div className={`p-1.5 sm:p-2 rounded-lg ${
-                          level === diffLevel.value 
-                            ? 'bg-white/20' 
+                      {/* Background pattern for selected state */}
+                      {isSelected && (
+                        <div className="absolute inset-0 opacity-10">
+                          <div className="absolute top-0 right-0 w-12 h-12 bg-white rounded-full -translate-y-6 translate-x-6"></div>
+                          <div className="absolute bottom-0 left-0 w-6 h-6 bg-white rounded-full translate-y-3 -translate-x-3"></div>
+                        </div>
+                      )}
+                      
+                      <div className="relative flex items-center space-x-2">
+                        <div className={`p-1.5 rounded-lg transition-all duration-200 ${
+                          isSelected 
+                            ? 'bg-white/20 shadow-lg' 
                             : darkMode 
-                              ? 'bg-gray-700' 
-                              : diffLevel.bgColor
+                              ? 'bg-gray-700 group-hover:bg-gray-600' 
+                              : `${diffLevel.bgColor} group-hover:shadow-md`
                         }`}>
-                          <IconComponent className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                            level === diffLevel.value 
-                              ? 'text-white' 
+                          <IconComponent className={`w-4 h-4 transition-transform duration-200 ${
+                            isSelected 
+                              ? 'text-white scale-110' 
                               : darkMode 
-                                ? 'text-gray-300' 
-                                : diffLevel.textColor
+                                ? 'text-gray-300 group-hover:text-white' 
+                                : `${diffLevel.textColor} group-hover:scale-105`
                           }`} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-xs sm:text-sm truncate">{diffLevel.label}</div>
+                          <div className="flex items-center justify-between">
+                            <div className={`font-semibold text-sm truncate ${
+                              isSelected ? 'text-white' : ''
+                            }`}>
+                              {diffLevel.label}
+                            </div>
+                            <div className={`text-xs font-medium ${
+                              isSelected 
+                                ? 'text-white/80' 
+                                : darkMode 
+                                  ? 'text-gray-400' 
+                                  : 'text-gray-500'
+                            }`}>
+                              {estimatedTime}
+                            </div>
+                          </div>
                           <div className={`text-xs truncate ${
-                            level === diffLevel.value 
+                            isSelected 
                               ? 'text-white/80' 
                               : darkMode 
                                 ? 'text-gray-400' 
@@ -1737,70 +2315,175 @@ function App() {
                           }`}>
                             {diffLevel.description}
                           </div>
+                          
+                          {/* Difficulty indicator dots - compact */}
+                          <div className="flex items-center space-x-1 mt-1">
+                            {Array.from({ length: 4 }, (_, i) => (
+                              <div
+                                key={i}
+                                className={`w-1 h-1 rounded-full transition-colors duration-200 ${
+                                  i <= index
+                                    ? isSelected 
+                                      ? 'bg-white' 
+                                      : darkMode 
+                                        ? 'bg-indigo-400' 
+                                        : 'bg-indigo-500'
+                                    : isSelected 
+                                      ? 'bg-white/30' 
+                                      : darkMode 
+                                        ? 'bg-gray-600' 
+                                        : 'bg-gray-300'
+                                }`}
+                              />
+                            ))}
+                            <span className={`text-xs ml-1 ${
+                              isSelected 
+                                ? 'text-white/70' 
+                                : darkMode 
+                                  ? 'text-gray-500' 
+                                  : 'text-gray-400'
+                            }`}>
+                              {['Beginner', 'Intermediate', 'Advanced', 'Expert'][index]}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </button>
                   );
                 })}
               </div>
+              </div>
             </div>
 
-            {/* Generate Button */}
-            <button
-              onClick={handleSubmit}
-              disabled={loading || !topic.trim()}
-              className={`w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg sm:rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center space-x-2 ${
-                !topic.trim() 
-                  ? 'bg-gray-400 cursor-not-allowed text-white scale-100' 
-                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 hover:scale-105 hover:shadow-purple-500/25 active:scale-95'
-              } ${loading ? 'opacity-50 cursor-not-allowed animate-pulse' : 'hover:brightness-110'}`}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Generating...</span>
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4" />
-                  <span>{!topic.trim() ? 'Enter a topic first' : 'Generate Explanation'}</span>
-                </>
-              )}
-            </button>
+            {/* Generate Button - Desktop: normal, Mobile: moved to sticky bottom */}
+            <div className="hidden lg:block">
+              <button
+                onClick={handleSubmit}
+                disabled={loading || !topic.trim()}
+                className={`w-full py-2.5 sm:py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center space-x-2 ${
+                  !topic.trim() 
+                    ? 'bg-gray-400 cursor-not-allowed text-white scale-100' 
+                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 hover:scale-105 hover:shadow-purple-500/25 active:scale-95'
+                } ${loading ? 'opacity-50 cursor-not-allowed animate-pulse' : 'hover:brightness-110'}`}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4" />
+                    <span>{!topic.trim() ? 'Enter a topic first' : 'Generate Explanation'}</span>
+                  </>
+                )}
+              </button>
+            </div>
 
-            {/* Quick Recent Topics */}
+            {/* Enhanced Recent Topics - Desktop: full, Mobile: collapsible */}
             {localHistory.length > 0 && (
-              <div className={`pt-4 border-t ${darkMode ? 'border-gray-600/50' : 'border-gray-200'}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className={`text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                    Recent Topics
-                  </h3>
-                  <button 
-                    onClick={() => setShowHistory(true)}
-                    className={`text-xs ${darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'} transition-colors`}
+              <div className={`pt-2 lg:pt-3 border-t ${darkMode ? 'border-gray-600/50' : 'border-gray-200'}`}>
+                {/* Mobile: Compact recent topics button */}
+                <div className="lg:hidden">
+                  <button
+                    onClick={() => setMobileRecentExpanded(!mobileRecentExpanded)}
+                    className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors ${
+                      darkMode 
+                        ? 'bg-gray-800/50 hover:bg-gray-700/50 text-gray-200' 
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                    }`}
                   >
-                    View All
+                    <span className="text-sm font-medium">Recent ({localHistory.length})</span>
+                    <ChevronRight className={`w-4 h-4 transition-transform ${mobileRecentExpanded ? 'rotate-90' : ''}`} />
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {localHistory.slice(0, 4).map((item, index) => (
-                    <button
-                      key={index}
-                      onClick={() => {
-                        setTopic(item.topic);
-                        changeLevelWithFeedback(item.level, level); // Use helper function
-                        setError(''); // Clear any errors
-                      }}
-                      className={`px-3 py-1.5 text-xs rounded-full border transition-all duration-200 hover:scale-105 ${
-                        darkMode
-                          ? 'bg-gray-800/60 border-gray-600/50 text-gray-300 hover:bg-gray-700/60 hover:border-indigo-500/30'
-                          : 'bg-gray-100/80 border-gray-200 text-gray-700 hover:bg-indigo-100 hover:border-indigo-300'
-                      }`}
-                      title={`Click to use: ${item.topic} (${item.level} level)`}
+
+                {/* Desktop: Always show + Mobile: Show when expanded */}
+                <div className={`${mobileRecentExpanded ? 'block' : 'hidden'} lg:block`}>
+                  <div className="hidden lg:flex items-center justify-between mb-2">
+                    <h3 className={`text-sm font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                      Recent Topics
+                    </h3>
+                    <button 
+                      onClick={() => setShowHistory(true)}
+                      className={`text-xs ${darkMode ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-700'} transition-colors`}
                     >
-                      {item.topic.length > 12 ? `${item.topic.slice(0, 12)}...` : item.topic}
+                      View All
                     </button>
-                  ))}
+                  </div>
+                  
+                  {/* Enhanced Recent Topics with timestamps and badges - responsive count */}
+                  <div className="space-y-1.5 mt-2 lg:mt-0">
+                    {localHistory.slice(0, window.innerWidth < 1024 ? 3 : 2).map((item, index) => {
+                      const timeAgo = new Date(item.timestamp) ? (() => {
+                        const now = new Date();
+                        const then = new Date(item.timestamp);
+                        const diffInHours = Math.floor((now - then) / (1000 * 60 * 60));
+                        if (diffInHours < 1) return 'Now';
+                        if (diffInHours < 24) return `${diffInHours}h`;
+                        const diffInDays = Math.floor(diffInHours / 24);
+                        if (diffInDays === 1) return '1d';
+                        if (diffInDays < 7) return `${diffInDays}d`;
+                        return `${Math.floor(diffInDays / 7)}w`;
+                      })() : 'Recent';
+                      
+                      const levelData = DIFFICULTY_LEVELS.find(l => l.value === item.level);
+                      
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            setTopic(item.topic);
+                            changeLevelWithFeedback(item.level, level);
+                            setError('');
+                            // Close mobile sections after selection
+                            setMobileRecentExpanded(false);
+                            setMobileOptionsExpanded(false);
+                          }}
+                          className={`w-full p-2.5 rounded-lg border transition-all duration-200 hover:scale-[1.02] group ${
+                            darkMode
+                              ? 'bg-gray-800/60 border-gray-600/50 hover:bg-gray-700/70 hover:border-indigo-500/30'
+                              : 'bg-gray-50/80 border-gray-200 hover:bg-indigo-50 hover:border-indigo-300'
+                          }`}
+                          title={`Click to explore: ${item.topic}`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 text-left min-w-0">
+                              <div className={`font-medium text-sm truncate ${
+                                darkMode ? 'text-gray-200' : 'text-gray-800'
+                              }`}>
+                                {item.topic}
+                              </div>
+                              <div className="flex items-center space-x-2 mt-0.5">
+                                <span className={`inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-full ${
+                                  levelData ? `bg-gradient-to-r ${levelData.color} text-white` : 
+                                  (darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700')
+                                }`}>
+                                  {levelData?.label || item.level}
+                                </span>
+                                <span className={`text-xs ${
+                                  darkMode ? 'text-gray-400' : 'text-gray-500'
+                                }`}>
+                                  {timeAgo}
+                                </span>
+                                {item.cached && (
+                                  <span className={`inline-flex items-center text-xs ${
+                                    darkMode ? 'text-green-400' : 'text-green-600'
+                                  }`}>
+                                    <div className="w-1 h-1 bg-current rounded-full mr-1"></div>
+                                    Cached
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <ChevronRight className={`w-3 h-3 transition-transform group-hover:translate-x-1 ${
+                              darkMode ? 'text-gray-400' : 'text-gray-500'
+                            }`} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
@@ -1853,10 +2536,55 @@ function App() {
           </div>
         </div>
 
+        {/* Mobile Sticky Bottom Bar - Only visible on mobile */}
+        <div className={`lg:hidden fixed bottom-0 left-0 right-0 p-2.5 backdrop-blur-lg border-t z-40 transition-colors duration-300 ${
+          darkMode 
+            ? 'bg-gray-900/90 border-gray-700/50' 
+            : 'bg-white/90 border-gray-200/50'
+        }`}>
+          <div className="flex space-x-2">
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !topic.trim()}
+              className={`flex-1 py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-300 flex items-center justify-center space-x-2 ${
+                !topic.trim() 
+                  ? 'bg-gray-400 cursor-not-allowed text-white' 
+                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 active:scale-95'
+              } ${loading ? 'opacity-50 cursor-not-allowed animate-pulse' : ''}`}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Generating...</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4" />
+                  <span>{!topic.trim() ? 'Enter topic first' : 'Generate'}</span>
+                </>
+              )}
+            </button>
+            
+            {localHistory.length > 0 && (
+              <button
+                onClick={() => setShowHistory(true)}
+                className={`px-4 py-3 rounded-lg transition-colors ${
+                  darkMode 
+                    ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                title="View Recent Topics"
+              >
+                <History className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Right Content Area */}
         <div className="flex-1 flex flex-col min-h-0">
           {/* Content Header */}
-          <div className={`backdrop-blur-sm border-b border-opacity-20 p-4 sm:p-6 transition-colors duration-300 ${
+          <div className={`backdrop-blur-sm border-b border-opacity-20 p-3 lg:p-4 lg:sm:p-6 transition-colors duration-300 ${
             darkMode 
               ? 'bg-gray-900/40 border-gray-700' 
               : 'bg-white/40 border-white'
@@ -1884,7 +2612,7 @@ function App() {
           </div>
 
           {/* Main Content Body */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+          <div className="flex-1 overflow-y-auto p-3 lg:p-4 lg:sm:p-6 pb-16 lg:pb-4 lg:sm:pb-6">
             {error && (
               <div className={`mb-4 sm:mb-6 p-6 rounded-lg sm:rounded-xl border transition-colors duration-300 ${
                 darkMode 
@@ -1963,61 +2691,102 @@ function App() {
             )}
 
             {(loading || regenerating) && !explanation && (
-              <div className="space-y-6 animate-pulse">
-                {/* Loading skeleton for explanation */}
-                <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50 dark:border-gray-700/50">
-                  {/* Header skeleton */}
-                  <div className="flex items-center justify-between mb-6">
+              <div className="space-y-4 lg:space-y-6 animate-pulse">
+                {/* Loading skeleton for explanation - Fully Responsive */}
+                <div className={`backdrop-blur-sm rounded-xl p-4 lg:p-6 border ${
+                  darkMode 
+                    ? 'bg-gray-800/70 border-gray-700/50' 
+                    : 'bg-white/70 border-gray-200/50'
+                }`}>
+                  {/* Header skeleton - Mobile optimized */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 lg:mb-6 space-y-3 sm:space-y-0">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
-                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
+                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-spin" />
                       </div>
-                      <div>
-                        <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-48 mb-2"></div>
-                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+                      <div className="flex-1 min-w-0">
+                        <div className={`h-4 sm:h-5 rounded w-32 sm:w-48 mb-2 ${
+                          darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                        }`}></div>
+                        <div className={`h-3 rounded w-24 sm:w-32 ${
+                          darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                        }`}></div>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                      <div className="h-8 w-16 bg-gray-300 dark:bg-gray-600 rounded"></div>
-                      <div className="h-8 w-16 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                    <div className="flex space-x-2 self-start sm:self-auto">
+                      <div className={`h-7 sm:h-8 w-12 sm:w-16 rounded ${
+                        darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                      }`}></div>
+                      <div className={`h-7 sm:h-8 w-12 sm:w-16 rounded ${
+                        darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                      }`}></div>
+                      <div className={`h-7 sm:h-8 w-12 sm:w-16 rounded ${
+                        darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                      }`}></div>
                     </div>
                   </div>
 
-                  {/* Content skeleton */}
-                  <div className="space-y-4">
-                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
-                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-5/6"></div>
-                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-4/5"></div>
+                  {/* Content skeleton - Responsive */}
+                  <div className="space-y-3 lg:space-y-4">
+                    <div className={`h-3 sm:h-4 rounded w-full ${
+                      darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                    }`}></div>
+                    <div className={`h-3 sm:h-4 rounded w-11/12 sm:w-5/6 ${
+                      darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                    }`}></div>
+                    <div className={`h-3 sm:h-4 rounded w-10/12 sm:w-4/5 ${
+                      darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                    }`}></div>
                     
-                    {/* Code block skeleton */}
-                    <div className="bg-gray-800 rounded-lg overflow-hidden mt-6">
-                      <div className="px-4 py-2 bg-gray-700 flex items-center justify-between">
-                        <div className="h-4 bg-gray-600 rounded w-16"></div>
+                    {/* Code block skeleton - Mobile responsive */}
+                    <div className={`rounded-lg overflow-hidden mt-4 lg:mt-6 ${
+                      darkMode ? 'bg-gray-900' : 'bg-gray-100'
+                    }`}>
+                      <div className={`px-3 sm:px-4 py-2 flex items-center justify-between ${
+                        darkMode ? 'bg-gray-800' : 'bg-gray-200'
+                      }`}>
+                        <div className={`h-3 sm:h-4 rounded w-12 sm:w-16 ${
+                          darkMode ? 'bg-gray-700' : 'bg-gray-300'
+                        }`}></div>
                         <div className="flex space-x-1">
-                          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full"></div>
+                          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-500 rounded-full"></div>
+                          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
                         </div>
                       </div>
-                      <div className="p-4 space-y-2">
-                        <div className="h-3 bg-gray-600 rounded w-3/4"></div>
-                        <div className="h-3 bg-gray-600 rounded w-1/2"></div>
-                        <div className="h-3 bg-gray-600 rounded w-5/6"></div>
+                      <div className="p-3 sm:p-4 space-y-2">
+                        <div className={`h-2.5 sm:h-3 rounded w-3/4 ${
+                          darkMode ? 'bg-gray-700' : 'bg-gray-300'
+                        }`}></div>
+                        <div className={`h-2.5 sm:h-3 rounded w-1/2 ${
+                          darkMode ? 'bg-gray-700' : 'bg-gray-300'
+                        }`}></div>
+                        <div className={`h-2.5 sm:h-3 rounded w-5/6 ${
+                          darkMode ? 'bg-gray-700' : 'bg-gray-300'
+                        }`}></div>
                       </div>
                     </div>
 
-                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
-                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
-                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-4/5"></div>
+                    <div className={`h-3 sm:h-4 rounded w-full ${
+                      darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                    }`}></div>
+                    <div className={`h-3 sm:h-4 rounded w-3/4 ${
+                      darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                    }`}></div>
+                    <div className={`h-3 sm:h-4 rounded w-4/5 ${
+                      darkMode ? 'bg-gray-600' : 'bg-gray-300'
+                    }`}></div>
                   </div>
 
-                  {/* Status text */}
-                  <div className="mt-8 text-center">
-                    <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {/* Status text - Mobile responsive */}
+                  <div className="mt-6 lg:mt-8 text-center">
+                    <p className={`text-xs sm:text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
                       🧠 AI is crafting your personalized explanation...
                     </p>
-                    <div className={`w-64 bg-gray-200 rounded-full h-2 mx-auto mt-3 ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-2 rounded-full animate-pulse transition-all duration-1000" 
+                    <div className={`w-48 sm:w-64 rounded-full h-1.5 sm:h-2 mx-auto mt-2 sm:mt-3 ${
+                      darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                    }`}>
+                      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 h-1.5 sm:h-2 rounded-full animate-pulse transition-all duration-1000" 
                            style={{width: '60%'}}></div>
                     </div>
                   </div>
@@ -2026,11 +2795,12 @@ function App() {
             )}
 
             {explanation && (
-              <div className={`explanation-wrapper backdrop-blur-lg rounded-2xl border shadow-2xl hover:shadow-3xl transition-all duration-500 overflow-hidden ${
-                darkMode 
-                  ? 'bg-gray-800/90 border-gray-700/50' 
-                  : 'bg-white/80 border-white/30'
-              }`}>
+              <div className="relative">
+                <div className={`explanation-wrapper backdrop-blur-lg rounded-2xl border shadow-2xl hover:shadow-3xl transition-all duration-500 overflow-hidden ${
+                  darkMode 
+                    ? 'bg-gray-800/90 border-gray-700/50' 
+                    : 'bg-white/80 border-white/30'
+                }`}>
                 <div className={`explanation-header p-6 border-b ${
                   darkMode 
                     ? 'bg-gradient-to-r from-gray-800/80 via-gray-700/80 to-gray-800/80 border-gray-700/40' 
@@ -2066,98 +2836,206 @@ function App() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 self-start sm:self-auto">
-                      {/* Regenerate Button - Blue theme with RefreshCw icon */}
-                      <button
-                        onClick={handleRegenerate}
-                        disabled={regenerating || loading}
-                        title="Generate a fresh explanation and replace the cached version"
-                        className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-sm ${
-                          regenerating
-                            ? 'bg-blue-50 text-blue-400 cursor-not-allowed'
-                            : 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-lg transform hover:-translate-y-0.5'
-                        }`}
-                      >
-                        {regenerating ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span className="hidden sm:inline">Regenerating...</span>
-                            <span className="sm:hidden">...</span>
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="w-4 h-4" />
-                            <span>Regenerate</span>
-                          </>
-                        )}
-                      </button>
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-2 self-start lg:self-auto">
+                      {/* Top Row - Reading Controls */}
+                      <div className="flex items-center gap-2 order-1 lg:order-none">
+                        {/* Reading Time Estimate */}
+                        <div className={`flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+                          darkMode 
+                            ? 'bg-gray-700/70 text-gray-300' 
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          <Clock className="w-3 h-3" />
+                          <span>{Math.max(1, Math.ceil(explanation.length / 1000))} min read</span>
+                        </div>
 
-                      {/* Export Button - Purple theme */}
-                      <button
-                        onClick={() => exportToPDF(formatExplanation(explanation), `Explanation - ${topic}`)}
-                        className="flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-sm bg-purple-500 text-white hover:bg-purple-600 hover:shadow-lg transform hover:-translate-y-0.5"
-                        title="Export as PDF"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Export</span>
-                      </button>
+                        {/* Font Size Controls - Mobile/Desktop */}
+                        <div className={`flex items-center rounded-lg border ${
+                          darkMode 
+                            ? 'bg-gray-700/50 border-gray-600' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}>
+                          <button
+                            onClick={() => setFontSize(Math.max(14, fontSize - 2))}
+                            className={`p-1.5 rounded-l-lg transition-colors ${
+                              darkMode 
+                                ? 'hover:bg-gray-600 text-gray-300' 
+                                : 'hover:bg-gray-200 text-gray-600'
+                            }`}
+                            title="Decrease font size"
+                          >
+                            <span className="text-xs font-bold">A-</span>
+                          </button>
+                          <div className={`px-2 py-1.5 text-xs ${
+                            darkMode ? 'text-gray-300' : 'text-gray-600'
+                          }`}>
+                            {fontSize}px
+                          </div>
+                          <button
+                            onClick={() => setFontSize(Math.min(24, fontSize + 2))}
+                            className={`p-1.5 rounded-r-lg transition-colors ${
+                              darkMode 
+                                ? 'hover:bg-gray-600 text-gray-300' 
+                                : 'hover:bg-gray-200 text-gray-600'
+                            }`}
+                            title="Increase font size"
+                          >
+                            <span className="text-xs font-bold">A+</span>
+                          </button>
+                        </div>
+                      </div>
 
-                      {/* Share Button - Commented out until deployment */}
-                      {/* 
-                      <button
-                        onClick={() => shareExplanation(topic, explanation)}
-                        className="flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-sm bg-green-100 text-green-700 hover:bg-green-200 hover:shadow-md transform hover:-translate-y-0.5"
-                        title="Share explanation"
-                      >
-                        <Share2 className="w-4 h-4" />
-                        <span>Share</span>
-                      </button>
-                      */}
+                      {/* Bottom Row - Action Buttons */}
+                      <div className="flex flex-wrap items-center gap-2 order-2 lg:order-none">
+                        {/* Regenerate Button - Blue theme with RefreshCw icon */}
+                        <button
+                          onClick={handleRegenerate}
+                          disabled={regenerating || loading}
+                          title="Generate a fresh explanation and replace the cached version"
+                          className={`flex items-center space-x-1.5 lg:space-x-2 px-2.5 lg:px-3 xl:px-4 py-2 rounded-xl text-xs lg:text-sm font-medium transition-all duration-200 shadow-sm ${
+                            regenerating
+                              ? 'bg-blue-50 text-blue-400 cursor-not-allowed'
+                              : 'bg-blue-500 text-white hover:bg-blue-600 hover:shadow-lg transform hover:-translate-y-0.5'
+                          }`}
+                        >
+                          {regenerating ? (
+                            <>
+                              <Loader2 className="w-3 h-3 lg:w-4 lg:h-4 animate-spin" />
+                              <span className="hidden sm:inline">Regenerating...</span>
+                              <span className="sm:hidden">...</span>
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="w-3 h-3 lg:w-4 lg:h-4" />
+                              <span>Regenerate</span>
+                            </>
+                          )}
+                        </button>
 
-                      {/* Copy Button - Green when success, gray when normal */}
-                      <button
-                        onClick={copyToClipboard}
-                        className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 shadow-sm transform ${
-                          copySuccess
-                            ? 'bg-green-500 text-white shadow-lg scale-105 animate-bounce'
-                            : 'bg-gray-500 text-white hover:bg-gray-600 hover:shadow-xl hover:scale-105 hover:-translate-y-1 active:scale-95 hover:shadow-gray-500/25'
-                        }`}
-                        title={copySuccess ? "Copied to clipboard!" : "Copy to clipboard"}
-                      >
-                        {copySuccess ? (
-                          <>
-                            <CheckCircle className="w-4 h-4" />
-                            <span>Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-4 h-4" />
-                            <span>Copy</span>
-                          </>
-                        )}
-                      </button>
+                        {/* Enhanced PDF Export Button with Preview */}
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            exportToPDF(formatExplanation(explanation), `Explanation - ${topic}`);
+                          }}
+                          disabled={exportLoading}
+                          className={`
+                            flex items-center space-x-1.5 lg:space-x-2 px-2.5 lg:px-3 xl:px-4 py-2 rounded-xl text-xs lg:text-sm font-medium transition-all duration-200 shadow-sm transform
+                            ${exportLoading 
+                              ? 'bg-purple-300 text-purple-100 cursor-not-allowed' 
+                              : exportSuccess
+                              ? 'bg-green-500 text-white hover:bg-green-600 scale-105 animate-bounce shadow-lg'
+                              : 'bg-purple-500 text-white hover:bg-purple-600 hover:shadow-lg hover:-translate-y-0.5'
+                            }
+                          `}
+                          title={
+                            exportLoading ? "Preparing PDF Preview..." 
+                            : exportSuccess ? "PDF Generated Successfully!" 
+                            : "Export as PDF"
+                          }
+                        >
+                          {exportLoading ? (
+                            <>
+                              <svg className="w-3 h-3 lg:w-4 lg:h-4 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span className="hidden sm:inline">Preparing...</span>
+                              <span className="sm:hidden">...</span>
+                            </>
+                          ) : exportSuccess ? (
+                            <>
+                              <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" />
+                              <span>Success!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Download className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" />
+                              <span>PDF</span>
+                            </>
+                          )}
+                        </button>
+
+                        {/* Copy Button - Green when success, gray when normal */}
+                        <button
+                          onClick={copyToClipboard}
+                          className={`flex items-center space-x-1.5 lg:space-x-2 px-2.5 lg:px-3 xl:px-4 py-2 rounded-xl text-xs lg:text-sm font-medium transition-all duration-300 shadow-sm transform ${
+                            copySuccess
+                              ? 'bg-green-500 text-white shadow-lg scale-105 animate-bounce'
+                              : 'bg-gray-500 text-white hover:bg-gray-600 hover:shadow-xl hover:scale-105 hover:-translate-y-1 active:scale-95 hover:shadow-gray-500/25'
+                          }`}
+                          title={copySuccess ? "Copied to clipboard!" : "Copy to clipboard"}
+                        >
+                          {copySuccess ? (
+                            <>
+                              <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 lg:w-4 lg:h-4" />
+                              <span>Copy</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className={`explanation-body p-8 ${
-                  darkMode ? 'bg-gray-800/50' : 'bg-white/50'
+                
+                {/* Reading Progress Indicator */}
+                <div className={`h-1 w-full ${
+                  darkMode ? 'bg-gray-700' : 'bg-gray-200'
                 }`}>
-                  {/* Custom formatted explanation with bulletproof styling */}
                   <div 
-                    className={`explanation-content max-w-none ${
+                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300"
+                    style={{ width: `${readingProgress}%` }}
+                  ></div>
+                </div>
+                
+                <div className={`explanation-body p-4 lg:p-6 xl:p-8 ${
+                  darkMode ? 'bg-gray-800/50' : 'bg-white/50'
+                } transition-colors duration-300`}>
+                  {/* Custom formatted explanation with enhanced styling and font controls */}
+                  <div 
+                    className={`explanation-content max-w-none leading-relaxed ${
                       darkMode 
                         ? 'prose-invert prose-headings:text-gray-100 prose-p:text-gray-200' 
                         : 'prose-gray prose-headings:text-gray-900 prose-p:text-gray-800'
                     }`}
                     style={{
-                      // Custom CSS variables for code block theming
+                      // Custom CSS variables for dynamic theming and font sizing
                       '--code-bg': darkMode ? '#1f2937' : '#f9fafb',
                       '--code-text': darkMode ? '#10b981' : '#059669',
-                      '--code-border': darkMode ? '#374151' : '#d1d5db'
+                      '--code-border': darkMode ? '#374151' : '#d1d5db',
+                      fontSize: `${fontSize}px`,
+                      lineHeight: fontSize < 18 ? '1.6' : '1.7'
                     }}
                     dangerouslySetInnerHTML={{ __html: formatExplanation(explanation) }}
+                    onScroll={handleExplanationScroll}
                   />
                 </div>
+                </div>
+                
+                {/* Back to Top Button for long explanations */}
+                {readingProgress > 20 && (
+                  <button
+                    onClick={() => {
+                      const explanationElement = document.querySelector('.explanation-content');
+                      if (explanationElement) {
+                        explanationElement.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
+                    className={`fixed bottom-20 lg:bottom-6 right-4 lg:right-6 p-3 rounded-full shadow-lg transition-all duration-300 z-30 ${
+                      darkMode 
+                        ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600' 
+                        : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                    }`}
+                    title="Back to top"
+                  >
+                    <ChevronRight className="w-4 h-4 transform -rotate-90" />
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -2171,37 +3049,37 @@ function App() {
             className="flex-1 lg:flex-none"
             onClick={() => setShowHistory(false)}
           ></div>
-          <div className={`w-full max-w-md shadow-2xl overflow-hidden animate-slide-in-right ${
+          <div className={`w-full sm:max-w-md shadow-2xl overflow-hidden animate-slide-in-right ${
             darkMode 
               ? 'bg-gray-900/95 backdrop-blur-xl border-l border-gray-700/50' 
               : 'bg-white'
           }`}>
-            <div className={`p-6 border-b ${
+            <div className={`p-4 sm:p-6 border-b ${
               darkMode 
                 ? 'border-gray-700/50 bg-gradient-to-r from-gray-800/80 to-gray-800/60' 
                 : 'border-gray-200 bg-gradient-to-r from-indigo-50 to-blue-50'
             }`}>
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg ${
+                <div className="flex items-center space-x-3 min-w-0">
+                  <div className={`p-2 rounded-lg flex-shrink-0 ${
                     darkMode ? 'bg-indigo-900/50' : 'bg-indigo-100'
                   }`}>
-                    <History className={`w-6 h-6 ${
+                    <History className={`w-5 h-5 sm:w-6 sm:h-6 ${
                       darkMode ? 'text-indigo-400' : 'text-indigo-600'
                     }`} />
                   </div>
-                  <div>
-                    <h2 className={`text-xl font-bold ${
+                  <div className="min-w-0 flex-1">
+                    <h2 className={`text-lg sm:text-xl font-bold ${
                       darkMode ? 'text-gray-100' : 'text-gray-900'
                     }`}>Search History</h2>
-                    <p className={`text-sm ${
+                    <p className={`text-xs sm:text-sm ${
                       darkMode ? 'text-gray-400' : 'text-gray-600'
-                    }`}>Your recent searches (stored locally)</p>
+                    }`}>Your recent searches</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowHistory(false)}
-                  className={`p-2 rounded-lg transition-colors group ${
+                  className={`p-2 rounded-lg transition-colors group flex-shrink-0 ${
                     darkMode 
                       ? 'hover:bg-gray-700/60' 
                       : 'hover:bg-white/60'
@@ -2311,32 +3189,32 @@ function App() {
 
       {/* 📊 ENHANCED LEARNING ANALYTICS DASHBOARD */}
       {showAnalytics && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className={`rounded-2xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden animate-fade-in ${
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className={`rounded-xl sm:rounded-2xl shadow-2xl max-w-7xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden animate-fade-in ${
             darkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
-            <div className={`p-6 border-b transition-colors duration-300 ${
+            <div className={`p-4 sm:p-6 border-b transition-colors duration-300 ${
               darkMode 
                 ? 'border-gray-700 bg-gradient-to-r from-gray-800 via-gray-900 to-gray-800' 
                 : 'border-gray-200 bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50'
             }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl shadow-lg">
-                    <TrendingUp className="w-6 h-6 text-white" />
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+                  <div className="p-2 sm:p-3 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
+                    <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
-                  <div>
-                    <h2 className={`text-2xl font-bold transition-colors duration-300 ${
+                  <div className="min-w-0 flex-1">
+                    <h2 className={`text-lg sm:text-2xl font-bold transition-colors duration-300 ${
                       darkMode ? 'text-white' : 'text-gray-900'
                     }`}>Your Learning Journey</h2>
-                    <p className={`text-sm mt-1 transition-colors duration-300 ${
+                    <p className={`text-xs sm:text-sm mt-1 transition-colors duration-300 ${
                       darkMode ? 'text-gray-300' : 'text-gray-600'
-                    }`}>Track your progress and discover insights about your learning patterns</p>
+                    }`}>Track your progress and discover insights</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowAnalytics(false)}
-                  className={`p-2 rounded-lg transition-colors group ${
+                  className={`p-2 rounded-lg transition-colors group self-start sm:self-auto ${
                     darkMode 
                       ? 'hover:bg-gray-700/60 text-gray-400 hover:text-gray-200' 
                       : 'hover:bg-white/60 text-gray-500 hover:text-gray-700'
@@ -3100,28 +3978,28 @@ function App() {
 
       {/* Keyboard Shortcuts Modal */}
       {showShortcuts && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className={`w-full max-w-md rounded-2xl shadow-2xl overflow-hidden ${
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className={`w-full max-w-sm sm:max-w-md rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden ${
             darkMode ? 'bg-gray-800' : 'bg-white'
           }`}>
-            <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className={`p-4 sm:p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
-                    <Keyboard className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                <div className="flex items-center space-x-3 min-w-0">
+                  <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex-shrink-0">
+                    <Keyboard className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
                   </div>
-                  <div>
-                    <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  <div className="min-w-0 flex-1">
+                    <h2 className={`text-lg sm:text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                       Keyboard Shortcuts
                     </h2>
-                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <p className={`text-xs sm:text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                       Speed up your workflow
                     </p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowShortcuts(false)}
-                  className={`p-2 rounded-lg transition-colors group ${
+                  className={`p-2 rounded-lg transition-colors group flex-shrink-0 ${
                     darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   }`}
                   title="Close"
@@ -3131,22 +4009,22 @@ function App() {
               </div>
             </div>
             
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
               {[
                 { key: 'Ctrl + Enter', action: 'Submit topic for explanation' },
                 { key: 'Ctrl + K', action: 'Focus on topic input field' },
                 { key: 'Ctrl + D', action: 'Toggle dark mode' },
                 { key: 'Escape', action: 'Close modals and dialogs' },
               ].map((shortcut, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <div key={index} className="flex items-center justify-between space-x-3">
+                  <span className={`text-xs sm:text-sm flex-1 min-w-0 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                     {shortcut.action}
                   </span>
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-1 flex-shrink-0">
                     {shortcut.key.split(' + ').map((key, keyIndex) => (
                       <React.Fragment key={keyIndex}>
                         {keyIndex > 0 && <span className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>+</span>}
-                        <kbd className={`px-2 py-1 rounded text-xs font-mono ${
+                        <kbd className={`px-1.5 sm:px-2 py-1 rounded text-xs font-mono ${
                           darkMode 
                             ? 'bg-gray-700 text-gray-300 border border-gray-600' 
                             : 'bg-gray-100 text-gray-700 border border-gray-300'
@@ -3158,6 +4036,168 @@ function App() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clean PDF Preview Modal */}
+      {showPDFPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden border ${
+            darkMode 
+              ? 'bg-gray-800 border-gray-600' 
+              : 'bg-white border-gray-200'
+          }`}>
+            {/* Clean Modal Header */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold">PDF Export Preview</h3>
+                    <p className="text-indigo-100 text-sm">{pdfTitle}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowPDFPreview(false)}
+                  className="w-8 h-8 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg flex items-center justify-center transition-all duration-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Simple Preview Content */}
+            <div className="p-6 overflow-y-auto max-h-[50vh]">
+              {/* Simple Preview Card */}
+              <div className={`rounded-xl p-6 mb-6 border ${
+                darkMode 
+                  ? 'bg-gray-700 border-gray-600' 
+                  : 'bg-gray-50 border-gray-200'
+              }`}>
+                <div className="text-center mb-4">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg mb-3">
+                    <span className="font-bold text-lg">C</span>
+                    <span className="font-bold">ConceptAI</span>
+                  </div>
+                  <h2 className={`text-xl font-bold mb-2 ${
+                    darkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    {topic || 'ConceptAI Explanation'}
+                  </h2>
+                  <p className={`text-sm ${
+                    darkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    Generated on {new Date().toLocaleDateString()}
+                  </p>
+                </div>
+
+                {/* Content Preview */}
+                <div className={`rounded-lg p-4 border ${
+                  darkMode 
+                    ? 'bg-gray-800 border-gray-600' 
+                    : 'bg-white border-gray-200'
+                }`}>
+                  <h4 className={`text-sm font-semibold mb-3 ${
+                    darkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    Content Preview:
+                  </h4>
+                  <div className={`text-sm leading-relaxed ${
+                    darkMode ? 'text-gray-300' : 'text-gray-700'
+                  }`}>
+                    {explanation ? (
+                      <div className="space-y-2">
+                        {explanation.slice(0, 400).split('\n').slice(0, 6).map((line, index) => (
+                          <p key={index} className="text-sm">
+                            {line.replace(/###?\s*/g, '').replace(/\*\*(.*?)\*\*/g, '$1').trim() || ''}
+                          </p>
+                        ))}
+                        {explanation.length > 400 && (
+                          <p className={`text-xs mt-3 italic ${
+                            darkMode ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
+                            ...and more content in the complete PDF
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm">No content available.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Simple Info */}
+              <div className={`text-center p-4 rounded-lg ${
+                darkMode 
+                  ? 'bg-blue-900/20 text-blue-300' 
+                  : 'bg-blue-50 text-blue-700'
+              }`}>
+                <p className="text-sm">
+                  📄 Professional PDF with ConceptAI branding and enhanced formatting
+                </p>
+              </div>
+            </div>
+
+            {/* Clean Modal Footer */}
+            <div className={`px-6 py-4 border-t flex items-center justify-between ${
+              darkMode 
+                ? 'border-gray-600 bg-gray-800' 
+                : 'border-gray-200 bg-gray-50'
+            }`}>
+              <p className={`text-sm ${
+                darkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                Click download to save as PDF
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowPDFPreview(false)}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 ${
+                    darkMode 
+                      ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={downloadPDF}
+                  disabled={exportLoading}
+                  className={`
+                    flex items-center gap-2 px-6 py-2 text-sm font-semibold rounded-lg transition-all duration-200
+                    ${exportLoading 
+                      ? `cursor-not-allowed ${
+                          darkMode 
+                            ? 'bg-gray-600 text-gray-400' 
+                            : 'bg-gray-300 text-gray-500'
+                        }` 
+                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl'
+                    }
+                  `}
+                >
+                  {exportLoading ? (
+                    <>
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Download PDF
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
