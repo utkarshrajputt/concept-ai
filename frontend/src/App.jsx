@@ -1700,8 +1700,8 @@ function App() {
     while (attempt <= maxRetries) {
       try {
         const controller = new AbortController();
-        // Different timeouts based on complexity level
-        const timeoutDuration = level === 'advanced' || level === 'graduate' ? 120000 : 60000; // 2 minutes for advanced, 1 minute for others
+        // Adjusted timeouts to work with Render's worker limits
+        const timeoutDuration = level === 'advanced' || level === 'graduate' ? 45000 : 30000; // 45s for advanced, 30s for others
         timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
 
         console.log(
@@ -3573,7 +3573,7 @@ function App() {
                     <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
                     <span className="font-medium">
                       {level === 'advanced' || level === 'graduate' 
-                        ? 'Generating detailed explanation... This may take up to 2 minutes.'
+                        ? 'Generating detailed explanation... This may take up to 45 seconds.'
                         : 'Generating explanation...'
                       }
                     </span>
