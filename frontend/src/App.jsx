@@ -505,12 +505,16 @@ const formatExplanation = (text) => {
 
       if (isHeader && !headerProcessed) {
         processedRows.push(`
-          <div class="table-header bg-gray-100 dark:bg-gray-700 grid gap-0 border-b-2 border-gray-300 dark:border-gray-600" style="grid-template-columns: repeat(${numCols}, minmax(120px, 1fr));">
+          <div class="table-header bg-gray-100 dark:bg-gray-700 grid gap-0 border-b-2 border-gray-300 dark:border-gray-600" style="grid-template-columns: repeat(${numCols}, minmax(150px, 1fr));">
             ${cells
               .slice(0, numCols)
               .map(
                 (cell, index) =>
-                  `<div class="font-bold text-sm p-3 sm:p-4 text-center text-gray-800 dark:text-gray-200 ${index > 0 ? 'border-l border-gray-300 dark:border-gray-600' : ''} whitespace-nowrap overflow-hidden text-ellipsis">${cell}</div>`
+                  `<div class="font-bold text-sm p-3 sm:p-4 text-center text-gray-800 dark:text-gray-200 ${
+                    index > 0
+                      ? "border-l border-gray-300 dark:border-gray-600"
+                      : ""
+                  } break-words">${cell}</div>`
               )
               .join("")}
           </div>
@@ -518,7 +522,7 @@ const formatExplanation = (text) => {
         headerProcessed = true;
       } else {
         processedRows.push(`
-          <div class="table-row bg-white dark:bg-gray-800 grid gap-0 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700" style="grid-template-columns: repeat(${numCols}, minmax(120px, 1fr));">
+          <div class="table-row bg-white dark:bg-gray-800 grid gap-0 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700" style="grid-template-columns: repeat(${numCols}, minmax(150px, 1fr));">
             ${cells
               .slice(0, numCols)
               .map((cell, index) => {
@@ -547,11 +551,11 @@ const formatExplanation = (text) => {
                 }
 
                 const isHeaderCell = index === 0;
-                const cellClasses = isHeaderCell 
-                  ? "p-3 sm:p-4 text-sm font-bold text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600"
-                  : "p-3 sm:p-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap overflow-hidden text-ellipsis";
+                const cellClasses = isHeaderCell
+                  ? "p-3 sm:p-4 text-sm font-bold text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600 break-words"
+                  : "p-3 sm:p-4 text-sm text-gray-700 dark:text-gray-300 break-words";
 
-                return `<div class="table-cell ${cellClasses}" title="${processedCell}">${processedCell}</div>`;
+                return `<div class="table-cell ${cellClasses}">${processedCell}</div>`;
               })
               .join("")}
           </div>
@@ -563,10 +567,10 @@ const formatExplanation = (text) => {
       // Add special styling to the last row
       const lastRowIndex = processedRows.length - 1;
       processedRows[lastRowIndex] = processedRows[lastRowIndex].replace(
-        'border-b border-gray-100/70 dark:border-gray-700/70',
-        'border-b-0'
+        "border-b border-gray-100/70 dark:border-gray-700/70",
+        "border-b-0"
       );
-      
+
       return `<div class="table-container mb-6 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
         <div class="bg-gray-100 dark:bg-gray-700 border-b border-gray-300 dark:border-gray-600 px-4 py-3">
           <div class="flex items-center justify-between">
@@ -589,7 +593,9 @@ const formatExplanation = (text) => {
           </div>
         </div>
         <div class="px-4 py-2 bg-gray-50 dark:bg-gray-750 border-t border-gray-200 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400 text-center">
-          ${processedRows.length} ${processedRows.length === 1 ? 'entry' : 'entries'} • Scroll horizontally on mobile
+          ${processedRows.length} ${
+        processedRows.length === 1 ? "entry" : "entries"
+      } • Scroll horizontally on mobile
         </div>
       </div>`;
     }

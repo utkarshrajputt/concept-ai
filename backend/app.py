@@ -197,8 +197,13 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Lists: Use numbered lists (1. 2. 3.) for steps/sequences, use bullet points (-) for features/characteristics  
 • Code: Wrap code/formulas in `backticks` for inline, ```language blocks``` for multi-line
 • Emphasis: Use **bold** for key terms, _italics_ for definitions
-• Tables: Use | Column 1 | Column 2 | format with |---------|---------|
+• Tables: Only use when comparing multiple items or showing structured data. ALWAYS place on separate lines with blank lines before and after. Use | Column 1 | Column 2 | format with |---------|---------|
 • Math: Use \\( formula \\) for inline math, \\[ formula \\] for display math
+
+IMPORTANT GUIDELINES:
+- Use tables ONLY when they genuinely help compare or organize information (like comparing different types, features, or examples)
+- Most explanations should focus on narrative, analogies, and simple lists rather than tables
+- Tables are NOT needed for every topic - only use when they add clear value
 
 STRUCTURE your explanation with:
 ### What is [Topic]?
@@ -215,8 +220,12 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Lists: Use numbered lists (1. 2. 3.) for procedures/steps, bullet points (-) for key concepts
 • Code: Use `backticks` for terms/variables, ```language blocks``` for code examples
 • Emphasis: Use **bold** for important concepts, _italics_ for technical terms
-• Tables: Use proper markdown tables | Header 1 | Header 2 | with separator rows
+• Tables: Use only when comparing data, features, or multiple examples would be clearer than lists
 • Math: Use \\( x = y \\) for inline formulas, \\[ equations \\] for display math
+
+IMPORTANT GUIDELINES:
+- Tables should be used sparingly - only when they genuinely help organize comparative information
+- Focus on clear explanations, examples, and logical flow rather than forcing tabular format
 
 STRUCTURE your explanation with:
 ### Definition and Overview
@@ -234,8 +243,12 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Lists: Use numbered lists (1. 2. 3.) for methodologies/processes, bullet points (-) for principles/features
 • Code: Use `technical terms`, ```language syntax``` for algorithms/implementations
 • Emphasis: Use **bold** for core concepts, _italics_ for theoretical terms
-• Tables: Create detailed comparison tables with | Parameter | Value | Description | format
+• Tables: Use only when detailed comparisons or structured data analysis adds significant value
 • Math: Use \\( notation \\) for inline math, \\[ complex equations \\] for proofs/derivations
+
+IMPORTANT GUIDELINES:
+- Tables should be reserved for complex comparisons, parameter analysis, or structured research data
+- Focus on theoretical depth and mathematical rigor rather than forcing tabular presentation
 
 STRUCTURE your explanation with:
 ### Theoretical Foundation
@@ -254,8 +267,12 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Lists: Use numbered lists (1. 2. 3.) for methodologies/algorithms, bullet points (-) for insights/findings
 • Code: Use `specialized notation`, ```language implementations``` for production code
 • Emphasis: Use **bold** for critical concepts, _italics_ for research terminology  
-• Tables: Create comprehensive analysis tables with multiple columns for comparisons
+• Tables: Use only for comprehensive analysis when comparing multiple parameters, methodologies, or research findings
 • Math: Use \\( advanced notation \\) inline, \\[ complex derivations \\] for mathematical proofs
+
+IMPORTANT GUIDELINES:
+- Tables should be reserved for detailed technical comparisons, research summaries, or parameter analysis
+- Emphasize cutting-edge research, implementation details, and professional insights
 
 STRUCTURE your explanation with:
 ### State-of-the-Art Overview
@@ -340,8 +357,13 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Lists: Use numbered lists (1. 2. 3.) for steps/sequences, use bullet points (-) for features/characteristics  
 • Code: Wrap code/formulas in `backticks` for inline, ```language blocks``` for multi-line
 • Emphasis: Use **bold** for key terms, _italics_ for definitions
-• Tables: Use | Column 1 | Column 2 | format with |---------|---------|
+• Tables: Only use when comparing multiple items or showing structured data. ALWAYS place on separate lines with blank lines before and after. Use | Column 1 | Column 2 | format with |---------|---------|
 • Math: Use \\( formula \\) for inline math, \\[ formula \\] for display math
+
+IMPORTANT GUIDELINES:
+- Use tables ONLY when they genuinely help compare or organize information (like comparing different types, features, or examples)
+- Most explanations should focus on narrative, analogies, and simple lists rather than tables
+- Tables are NOT needed for every topic - only use when they add clear value
 
 STRUCTURE your explanation with:
 ### What is [Topic]?
@@ -358,8 +380,12 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Lists: Use numbered lists (1. 2. 3.) for procedures/steps, bullet points (-) for key concepts
 • Code: Use `backticks` for terms/variables, ```language blocks``` for code examples
 • Emphasis: Use **bold** for important concepts, _italics_ for technical terms
-• Tables: Use proper markdown tables | Header 1 | Header 2 | with separator rows
+• Tables: Use only when comparing data, features, or multiple examples would be clearer than lists
 • Math: Use \\( x = y \\) for inline formulas, \\[ equations \\] for display math
+
+IMPORTANT GUIDELINES:
+- Tables should be used sparingly - only when they genuinely help organize comparative information
+- Focus on clear explanations, examples, and logical flow rather than forcing tabular format
 
 STRUCTURE your explanation with:
 ### Definition and Overview
@@ -377,8 +403,12 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Lists: Use numbered lists (1. 2. 3.) for methodologies/processes, bullet points (-) for principles/features
 • Code: Use `technical terms`, ```language syntax``` for algorithms/implementations
 • Emphasis: Use **bold** for core concepts, _italics_ for theoretical terms
-• Tables: Create detailed comparison tables with | Parameter | Value | Description | format
+• Tables: Use only when detailed comparisons or structured data analysis adds significant value
 • Math: Use \\( notation \\) for inline math, \\[ complex equations \\] for proofs/derivations
+
+IMPORTANT GUIDELINES:
+- Tables should be reserved for complex comparisons, parameter analysis, or structured research data
+- Focus on theoretical depth and mathematical rigor rather than forcing tabular presentation
 
 STRUCTURE your explanation with:
 ### Theoretical Foundation
@@ -397,8 +427,12 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Lists: Use numbered lists (1. 2. 3.) for methodologies/algorithms, bullet points (-) for insights/findings
 • Code: Use `specialized notation`, ```language implementations``` for production code
 • Emphasis: Use **bold** for critical concepts, _italics_ for research terminology  
-• Tables: Create comprehensive analysis tables with multiple columns for comparisons
+• Tables: Use only for comprehensive analysis when comparing multiple parameters, methodologies, or research findings
 • Math: Use \\( advanced notation \\) inline, \\[ complex derivations \\] for mathematical proofs
+
+IMPORTANT GUIDELINES:
+- Tables should be reserved for detailed technical comparisons, research summaries, or parameter analysis
+- Emphasize cutting-edge research, implementation details, and professional insights
 
 STRUCTURE your explanation with:
 ### State-of-the-Art Overview
