@@ -2580,7 +2580,7 @@ function App() {
               onClick={() => {
                 const quickTopics = [
                   "Artificial Intelligence",
-                  "Machine Learning", 
+                  "Machine Learning",
                   "Quantum Computing",
                   "Blockchain Technology",
                   "Climate Change",
@@ -2598,8 +2598,10 @@ function App() {
                 ];
                 const levels = ["eli5", "student", "graduate", "advanced"];
 
-                const randomTopic = quickTopics[Math.floor(Math.random() * quickTopics.length)];
-                const randomLevel = levels[Math.floor(Math.random() * levels.length)];
+                const randomTopic =
+                  quickTopics[Math.floor(Math.random() * quickTopics.length)];
+                const randomLevel =
+                  levels[Math.floor(Math.random() * levels.length)];
 
                 setTopic(randomTopic);
                 setLevel(randomLevel);
@@ -2619,8 +2621,12 @@ function App() {
                     <Lightbulb className="w-3 h-3 lg:w-4 lg:h-4" />
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-xs lg:text-sm">Random Topic</div>
-                    <div className="text-[10px] lg:text-xs opacity-90 hidden lg:block">Discover something new</div>
+                    <div className="font-semibold text-xs lg:text-sm">
+                      Random Topic
+                    </div>
+                    <div className="text-[10px] lg:text-xs opacity-90 hidden lg:block">
+                      Discover something new
+                    </div>
                   </div>
                 </div>
                 <ChevronRight className="w-3 h-3 lg:w-4 lg:h-4 opacity-70 group-hover:translate-x-1 transition-transform" />
@@ -3138,7 +3144,9 @@ function App() {
                       ? (() => {
                           const now = new Date();
                           const then = new Date(item.timestamp);
-                          const diffInHours = Math.floor((now - then) / (1000 * 60 * 60));
+                          const diffInHours = Math.floor(
+                            (now - then) / (1000 * 60 * 60)
+                          );
                           if (diffInHours < 1) return "Now";
                           if (diffInHours < 24) return `${diffInHours}h`;
                           const diffInDays = Math.floor(diffInHours / 24);
@@ -3148,7 +3156,9 @@ function App() {
                         })()
                       : "Recent";
 
-                    const levelData = DIFFICULTY_LEVELS.find((l) => l.value === item.level);
+                    const levelData = DIFFICULTY_LEVELS.find(
+                      (l) => l.value === item.level
+                    );
 
                     return (
                       <button
@@ -3195,9 +3205,12 @@ function App() {
                                 {timeAgo}
                               </span>
                               {item.cached && (
-                                <div className={`w-2 h-2 rounded-full ${
-                                  darkMode ? "bg-green-400" : "bg-green-500"
-                                }`} title="Cached"></div>
+                                <div
+                                  className={`w-2 h-2 rounded-full ${
+                                    darkMode ? "bg-green-400" : "bg-green-500"
+                                  }`}
+                                  title="Cached"
+                                ></div>
                               )}
                             </div>
                           </div>
@@ -3231,20 +3244,37 @@ function App() {
                   }`}
                 >
                   <div className="flex items-center space-x-1 lg:space-x-2 mb-1 lg:mb-3">
-                    <div className={`p-1 lg:p-2 rounded-md lg:rounded-lg ${
-                      darkMode ? "bg-green-500/20" : "bg-green-500/10"
-                    }`}>
-                      <TrendingUp className={`w-3 h-3 lg:w-4 lg:h-4 ${darkMode ? "text-green-400" : "text-green-600"}`} />
+                    <div
+                      className={`p-1 lg:p-2 rounded-md lg:rounded-lg ${
+                        darkMode ? "bg-green-500/20" : "bg-green-500/10"
+                      }`}
+                    >
+                      <TrendingUp
+                        className={`w-3 h-3 lg:w-4 lg:h-4 ${
+                          darkMode ? "text-green-400" : "text-green-600"
+                        }`}
+                      />
                     </div>
-                    <span className="text-xs lg:text-sm font-semibold">Progress</span>
+                    <span className="text-xs lg:text-sm font-semibold">
+                      Progress
+                    </span>
                   </div>
-                  <div className={`text-[10px] lg:text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                  <div
+                    className={`text-[10px] lg:text-xs ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
                     {localHistory.length} topics
                   </div>
                   <div className="mt-1 lg:mt-2 h-0.5 lg:h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-green-500 rounded-full transition-all duration-500"
-                      style={{ width: `${Math.min((localHistory.length / 10) * 100, 100)}%` }}
+                      style={{
+                        width: `${Math.min(
+                          (localHistory.length / 10) * 100,
+                          100
+                        )}%`,
+                      }}
                     ></div>
                   </div>
                 </button>
@@ -3259,22 +3289,39 @@ function App() {
                   }`}
                 >
                   <div className="flex items-center space-x-1 lg:space-x-2 mb-1 lg:mb-3">
-                    <div className={`p-1 lg:p-2 rounded-md lg:rounded-lg ${
-                      darkMode ? "bg-blue-500/20" : "bg-blue-500/10"
-                    }`}>
-                      <History className={`w-3 h-3 lg:w-4 lg:h-4 ${darkMode ? "text-blue-400" : "text-blue-600"}`} />
+                    <div
+                      className={`p-1 lg:p-2 rounded-md lg:rounded-lg ${
+                        darkMode ? "bg-blue-500/20" : "bg-blue-500/10"
+                      }`}
+                    >
+                      <History
+                        className={`w-3 h-3 lg:w-4 lg:h-4 ${
+                          darkMode ? "text-blue-400" : "text-blue-600"
+                        }`}
+                      />
                     </div>
-                    <span className="text-xs lg:text-sm font-semibold">Recent</span>
+                    <span className="text-xs lg:text-sm font-semibold">
+                      Recent
+                    </span>
                   </div>
-                  <div className={`text-[10px] lg:text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                  <div
+                    className={`text-[10px] lg:text-xs ${
+                      darkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
                     View history
                   </div>
                   {localHistory.length > 0 && (
                     <div className="flex -space-x-1 mt-1 lg:mt-2">
                       {localHistory.slice(0, 3).map((_, i) => (
-                        <div key={i} className={`w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full border ${
-                          darkMode ? "bg-blue-400 border-gray-800" : "bg-blue-500 border-white"
-                        }`}></div>
+                        <div
+                          key={i}
+                          className={`w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full border ${
+                            darkMode
+                              ? "bg-blue-400 border-gray-800"
+                              : "bg-blue-500 border-white"
+                          }`}
+                        ></div>
                       ))}
                     </div>
                   )}
@@ -3292,10 +3339,10 @@ function App() {
               : "bg-white/95 border-gray-200/50"
           }`}
           style={{
-            paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
-            paddingTop: '10px',
-            paddingLeft: '10px',
-            paddingRight: '10px'
+            paddingBottom: "max(8px, env(safe-area-inset-bottom))",
+            paddingTop: "10px",
+            paddingLeft: "10px",
+            paddingRight: "10px",
           }}
         >
           <div className="flex space-x-2">
