@@ -163,7 +163,9 @@ def get_ai_explanation(topic, level):
     }
     
     try:
-        response = requests.post(OPENROUTER_URL, json=payload, headers=headers, timeout=30)
+        # Adjust timeout based on complexity level
+        timeout_duration = 90 if level.lower() in ['graduate', 'advanced'] else 45
+        response = requests.post(OPENROUTER_URL, json=payload, headers=headers, timeout=timeout_duration)
         response.raise_for_status()
         
         data = response.json()

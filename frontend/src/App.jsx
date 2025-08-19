@@ -1700,10 +1700,12 @@ function App() {
     while (attempt <= maxRetries) {
       try {
         const controller = new AbortController();
-        timeoutId = setTimeout(() => controller.abort(), 60000); // Increased to 60 second timeout
+        // Different timeouts based on complexity level
+        const timeoutDuration = level === 'advanced' || level === 'graduate' ? 120000 : 60000; // 2 minutes for advanced, 1 minute for others
+        timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
 
         console.log(
-          `Making request to ${API_BASE_URL}/explain - Attempt ${attempt + 1}`
+          `Making request to ${API_BASE_URL}/explain - Attempt ${attempt + 1} (timeout: ${timeoutDuration/1000}s)`
         );
 
         const response = await fetch(`${API_BASE_URL}/explain`, {
@@ -3564,8 +3566,27 @@ function App() {
             )}
 
             {(loading || regenerating) && !explanation && (
-              <div className="space-y-4 lg:space-y-6 animate-pulse">
+              <div className="space-y-4 lg:space-y-6">
+                {/* Loading message */}
+                <div className={`text-center p-4 rounded-lg ${darkMode ? 'bg-gray-800/50 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
+                  <div className="flex items-center justify-center space-x-2 mb-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+                    <span className="font-medium">
+                      {level === 'advanced' || level === 'graduate' 
+                        ? 'Generating detailed explanation... This may take up to 2 minutes.'
+                        : 'Generating explanation...'
+                      }
+                    </span>
+                  </div>
+                  {(level === 'advanced' || level === 'graduate') && (
+                    <p className="text-sm opacity-75">
+                      Advanced and Graduate level explanations require more processing time.
+                    </p>
+                  )}
+                </div>
+                
                 {/* Loading skeleton for explanation - Fully Responsive */}
+                <div className="animate-pulse">
                 <div
                   className={`backdrop-blur-sm rounded-xl p-4 lg:p-6 border ${
                     darkMode
@@ -3707,6 +3728,7 @@ function App() {
                       ></div>
                     </div>
                   </div>
+                </div>
                 </div>
               </div>
             )}
