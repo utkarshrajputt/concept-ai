@@ -54,10 +54,20 @@ const ThemeContext = createContext();
 const useTheme = () => useContext(ThemeContext);
 
 // API Configuration
-// API configuration for both development and production
-const API_BASE_URL = import.meta.env.PROD 
-  ? import.meta.env.VITE_API_URL || "https://concept-ai-backend.onrender.com"
-  : "http://localhost:5000";
+// Force production URL when deployed on Vercel
+const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE_URL = isDevelopment 
+  ? "http://localhost:5000"
+  : "https://concept-ai-backend.onrender.com";
+
+// Debug: Log the API URL being used
+console.log("Environment check:", {
+  hostname: window.location.hostname,
+  isDevelopment: isDevelopment,
+  API_BASE_URL: API_BASE_URL,
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  MODE: import.meta.env.MODE
+});
 
 const DIFFICULTY_LEVELS = [
   {
@@ -1812,7 +1822,7 @@ function App() {
           err.message.includes("NetworkError")
         ) {
           setError(
-            "Network error. Please check if the backend server is running on port 5000."
+            `Network error. Using API: ${API_BASE_URL}. Please check your internet connection.`
           );
           break;
         }
