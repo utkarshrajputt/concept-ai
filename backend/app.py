@@ -176,7 +176,7 @@ def get_ai_explanation(topic, level):
     max_tokens = 800 if level.lower() in ['graduate', 'advanced'] else 600
     
     payload = {
-        "model": "openai/gpt-3.5-turbo",  # Faster model that works well within time limits
+        "model": "openrouter/auto",  # Automatically picks the best free model
         "messages": [
             {
                 "role": "system",
