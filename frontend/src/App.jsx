@@ -54,7 +54,10 @@ const ThemeContext = createContext();
 const useTheme = () => useContext(ThemeContext);
 
 // API Configuration
-const API_BASE_URL = "http://localhost:5000";
+// API configuration for both development and production
+const API_BASE_URL = import.meta.env.PROD 
+  ? import.meta.env.VITE_API_URL || "https://your-backend-url.onrender.com"
+  : "http://localhost:5000";
 
 const DIFFICULTY_LEVELS = [
   {
