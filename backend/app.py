@@ -115,13 +115,8 @@ def save_explanation(topic, level, explanation):
 
 def get_ai_explanation(topic, level):
     """Get explanation from OpenRouter DeepSeek API"""
-    print(f"DEBUG: get_ai_explanation called with topic='{topic}', level='{level}'")
-    
     if not OPENROUTER_API_KEY:
-        print("ERROR: OpenRouter API key not configured")
         return None, "OpenRouter API key not configured"
-    
-    print(f"DEBUG: API key is configured, making request to OpenRouter...")
     
     # Create system prompt based on difficulty level with formatting instructions
     level_prompts = {
@@ -134,7 +129,7 @@ def get_ai_explanation(topic, level):
     system_prompt = level_prompts.get(level.lower(), level_prompts["student"])
     
     payload = {
-        "model": "deepseek/deepseek-r1",
+        "model": "deepseek/deepseek-r1:free",  # Using the free version of DeepSeek R1
         "messages": [
             {
                 "role": "system",
@@ -159,6 +154,10 @@ def get_ai_explanation(topic, level):
         response.raise_for_status()
         
         data = response.json()
+        
+        if 'choices' not in data or len(data['choices']) == 0:
+            return None, "Invalid response from AI service"
+        
         explanation = data['choices'][0]['message']['content']
         
         # Check if response was truncated
