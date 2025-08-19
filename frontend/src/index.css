@@ -127,10 +127,8 @@
     background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   }
 
-  /* Table header cell styles */
+  /* Table header cell styles - Removed !important to allow Tailwind overrides */
   .table-header-cell {
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
-    color: #ffffff !important;
     border-right: 1px solid rgba(79, 70, 229, 0.3);
   }
 
@@ -175,22 +173,20 @@
     border-bottom-right-radius: 0.75rem;
   }
 
-  /* Dark mode table header cell styles */
+  /* Dark mode table header cell styles - Removed !important to allow Tailwind overrides */
   .dark .table-header-cell {
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
-    color: #ffffff !important;
     border-color: rgba(79, 70, 229, 0.6);
   }
 
-  /* Dark mode table cell styles */
+  /* Dark mode table cell styles - Removed !important to allow Tailwind overrides */
   .dark .table-cell {
-    background-color: rgba(31, 41, 55, 1) !important;
-    border-color: rgba(75, 85, 99, 0.6) !important;
-    color: #e5e7eb !important;
+    background-color: rgba(31, 41, 55, 1);
+    border-color: rgba(75, 85, 99, 0.6);
+    color: #e5e7eb;
   }
 
   .dark .table-cell:hover {
-    background-color: rgba(55, 65, 81, 1) !important;
+    background-color: rgba(55, 65, 81, 1);
   }
 
   /* Dark mode table row styles */

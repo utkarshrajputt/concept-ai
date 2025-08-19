@@ -55,8 +55,10 @@ const useTheme = () => useContext(ThemeContext);
 
 // API Configuration
 // Force production URL when deployed on Vercel
-const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE_URL = isDevelopment 
+const isDevelopment =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
+const API_BASE_URL = isDevelopment
   ? "http://localhost:5000"
   : "https://concept-ai-backend.onrender.com";
 
@@ -66,7 +68,7 @@ console.log("Environment check:", {
   isDevelopment: isDevelopment,
   API_BASE_URL: API_BASE_URL,
   VITE_API_URL: import.meta.env.VITE_API_URL,
-  MODE: import.meta.env.MODE
+  MODE: import.meta.env.MODE,
 });
 
 const DIFFICULTY_LEVELS = [
@@ -503,12 +505,12 @@ const formatExplanation = (text) => {
 
       if (isHeader && !headerProcessed) {
         processedRows.push(`
-          <div class="table-header bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 grid gap-0 border-b-2 border-indigo-200 dark:border-indigo-700" style="grid-template-columns: repeat(${numCols}, 1fr);">
+          <div class="table-header bg-gray-100 dark:bg-gray-700 grid gap-0 border-b-2 border-gray-300 dark:border-gray-600" style="grid-template-columns: repeat(${numCols}, minmax(120px, 1fr));">
             ${cells
               .slice(0, numCols)
               .map(
-                (cell) =>
-                  `<div class="font-bold text-sm p-4 text-center table-header-cell text-black dark:text-gray-200 bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-800">${cell}</div>`
+                (cell, index) =>
+                  `<div class="font-bold text-sm p-3 sm:p-4 text-center text-gray-800 dark:text-gray-200 ${index > 0 ? 'border-l border-gray-300 dark:border-gray-600' : ''} whitespace-nowrap overflow-hidden text-ellipsis">${cell}</div>`
               )
               .join("")}
           </div>
@@ -516,7 +518,7 @@ const formatExplanation = (text) => {
         headerProcessed = true;
       } else {
         processedRows.push(`
-          <div class="table-row grid gap-0 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" style="grid-template-columns: repeat(${numCols}, 1fr);">
+          <div class="table-row bg-white dark:bg-gray-800 grid gap-0 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700" style="grid-template-columns: repeat(${numCols}, minmax(120px, 1fr));">
             ${cells
               .slice(0, numCols)
               .map((cell, index) => {
@@ -529,26 +531,27 @@ const formatExplanation = (text) => {
                 if (isCode) {
                   processedCell = cell.replace(
                     /`([^`]+)`/g,
-                    '<code class="bg-indigo-100 dark:bg-indigo-900 px-2 py-1 rounded text-xs font-mono text-indigo-800 dark:text-indigo-300">$1</code>'
+                    '<code class="bg-gradient-to-r from-indigo-100 to-blue-100 dark:from-indigo-900/70 dark:to-blue-900/70 px-2.5 py-1.5 rounded-lg text-xs font-mono text-indigo-900 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/50 shadow-sm">$1</code>'
                   );
                 }
                 if (isEmphasis) {
                   processedCell = processedCell
                     .replace(
                       /\*\*([^*]+)\*\*/g,
-                      '<strong class="font-semibold text-black dark:text-gray-100">$1</strong>'
+                      '<strong class="font-bold text-slate-900 dark:text-gray-100 group-hover:text-black dark:group-hover:text-white transition-colors">$1</strong>'
                     )
                     .replace(
                       /\*([^*]+)\*/g,
-                      '<em class="italic text-black dark:text-gray-300">$1</em>'
+                      '<em class="italic text-slate-700 dark:text-gray-300 group-hover:text-slate-800 dark:group-hover:text-gray-200 transition-colors">$1</em>'
                     );
                 }
 
-                return `<div class="p-4 text-sm table-cell ${
-                  index === 0
-                    ? "font-medium text-gray-900 dark:text-gray-100"
-                    : "text-gray-700 dark:text-gray-300"
-                }">${processedCell}</div>`;
+                const isHeaderCell = index === 0;
+                const cellClasses = isHeaderCell 
+                  ? "p-3 sm:p-4 text-sm font-bold text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-700 border-r border-gray-200 dark:border-gray-600"
+                  : "p-3 sm:p-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap overflow-hidden text-ellipsis";
+
+                return `<div class="table-cell ${cellClasses}" title="${processedCell}">${processedCell}</div>`;
               })
               .join("")}
           </div>
@@ -557,19 +560,36 @@ const formatExplanation = (text) => {
     }
 
     if (processedRows.length > 0) {
-      return `<div class="table-container mb-8 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-xl bg-white dark:bg-gray-800">
-        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-          <div class="flex items-center space-x-2">
-            <div class="w-6 h-6 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+      // Add special styling to the last row
+      const lastRowIndex = processedRows.length - 1;
+      processedRows[lastRowIndex] = processedRows[lastRowIndex].replace(
+        'border-b border-gray-100/70 dark:border-gray-700/70',
+        'border-b-0'
+      );
+      
+      return `<div class="table-container mb-6 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
+        <div class="bg-gray-100 dark:bg-gray-700 border-b border-gray-300 dark:border-gray-600 px-4 py-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <div class="w-6 h-6 bg-blue-500 rounded-md flex items-center justify-center">
+                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                </svg>
+              </div>
+              <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">Data Table</span>
             </div>
-            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Data Table</span>
+            <div class="text-xs text-gray-600 dark:text-gray-400">
+              ${processedRows.length} rows
+            </div>
           </div>
         </div>
         <div class="overflow-x-auto">
-          ${processedRows.join("")}
+          <div class="min-w-full">
+            ${processedRows.join("")}
+          </div>
+        </div>
+        <div class="px-4 py-2 bg-gray-50 dark:bg-gray-750 border-t border-gray-200 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400 text-center">
+          ${processedRows.length} ${processedRows.length === 1 ? 'entry' : 'entries'} • Scroll horizontally on mobile
         </div>
       </div>`;
     }
@@ -1700,12 +1720,14 @@ function App() {
     while (attempt <= maxRetries) {
       try {
         const controller = new AbortController();
-        // Conservative timeouts to work with Render's worker limits
-        const timeoutDuration = level === 'advanced' || level === 'graduate' ? 30000 : 25000; // 30s for advanced, 25s for others
+        // Consistent timeout for all levels since Google AI is fast
+        const timeoutDuration = 25000; // 25s for all levels
         timeoutId = setTimeout(() => controller.abort(), timeoutDuration);
 
         console.log(
-          `Making request to ${API_BASE_URL}/explain - Attempt ${attempt + 1} (timeout: ${timeoutDuration/1000}s)`
+          `Making request to ${API_BASE_URL}/explain - Attempt ${
+            attempt + 1
+          } (timeout: ${timeoutDuration / 1000}s)`
         );
 
         const response = await fetch(`${API_BASE_URL}/explain`, {
@@ -2476,7 +2498,7 @@ function App() {
                     darkMode ? "text-green-400" : "text-green-700"
                   }`}
                 >
-                   Online
+                  Online
                 </span>
               </div>
 
@@ -3567,168 +3589,150 @@ function App() {
 
             {(loading || regenerating) && !explanation && (
               <div className="space-y-4 lg:space-y-6">
-                {/* Loading message */}
-                <div className={`text-center p-4 rounded-lg ${darkMode ? 'bg-gray-800/50 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-                    <span className="font-medium">
-                      {level === 'advanced' || level === 'graduate' 
-                        ? 'Generating detailed explanation... This may take up to 30 seconds.'
-                        : 'Generating explanation...'
-                      }
-                    </span>
-                  </div>
-                  {(level === 'advanced' || level === 'graduate') && (
-                    <p className="text-sm opacity-75">
-                      Advanced and Graduate level explanations require more processing time.
-                    </p>
-                  )}
-                </div>
-                
                 {/* Loading skeleton for explanation - Fully Responsive */}
                 <div className="animate-pulse">
-                <div
-                  className={`backdrop-blur-sm rounded-xl p-4 lg:p-6 border ${
-                    darkMode
-                      ? "bg-gray-800/70 border-gray-700/50"
-                      : "bg-white/70 border-gray-200/50"
-                  }`}
-                >
-                  {/* Header skeleton - Mobile optimized */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 lg:mb-6 space-y-3 sm:space-y-0">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
-                        <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-spin" />
+                  <div
+                    className={`backdrop-blur-sm rounded-xl p-4 lg:p-6 border ${
+                      darkMode
+                        ? "bg-gray-800/70 border-gray-700/50"
+                        : "bg-white/70 border-gray-200/50"
+                    }`}
+                  >
+                    {/* Header skeleton - Mobile optimized */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 lg:mb-6 space-y-3 sm:space-y-0">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
+                          <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-white animate-spin" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div
+                            className={`h-4 sm:h-5 rounded w-32 sm:w-48 mb-2 ${
+                              darkMode ? "bg-gray-600" : "bg-gray-300"
+                            }`}
+                          ></div>
+                          <div
+                            className={`h-3 rounded w-24 sm:w-32 ${
+                              darkMode ? "bg-gray-700" : "bg-gray-200"
+                            }`}
+                          ></div>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex space-x-2 self-start sm:self-auto">
                         <div
-                          className={`h-4 sm:h-5 rounded w-32 sm:w-48 mb-2 ${
+                          className={`h-7 sm:h-8 w-12 sm:w-16 rounded ${
                             darkMode ? "bg-gray-600" : "bg-gray-300"
                           }`}
                         ></div>
                         <div
-                          className={`h-3 rounded w-24 sm:w-32 ${
-                            darkMode ? "bg-gray-700" : "bg-gray-200"
+                          className={`h-7 sm:h-8 w-12 sm:w-16 rounded ${
+                            darkMode ? "bg-gray-600" : "bg-gray-300"
+                          }`}
+                        ></div>
+                        <div
+                          className={`h-7 sm:h-8 w-12 sm:w-16 rounded ${
+                            darkMode ? "bg-gray-600" : "bg-gray-300"
                           }`}
                         ></div>
                       </div>
                     </div>
-                    <div className="flex space-x-2 self-start sm:self-auto">
-                      <div
-                        className={`h-7 sm:h-8 w-12 sm:w-16 rounded ${
-                          darkMode ? "bg-gray-600" : "bg-gray-300"
-                        }`}
-                      ></div>
-                      <div
-                        className={`h-7 sm:h-8 w-12 sm:w-16 rounded ${
-                          darkMode ? "bg-gray-600" : "bg-gray-300"
-                        }`}
-                      ></div>
-                      <div
-                        className={`h-7 sm:h-8 w-12 sm:w-16 rounded ${
-                          darkMode ? "bg-gray-600" : "bg-gray-300"
-                        }`}
-                      ></div>
-                    </div>
-                  </div>
 
-                  {/* Content skeleton - Responsive */}
-                  <div className="space-y-3 lg:space-y-4">
-                    <div
-                      className={`h-3 sm:h-4 rounded w-full ${
-                        darkMode ? "bg-gray-600" : "bg-gray-300"
-                      }`}
-                    ></div>
-                    <div
-                      className={`h-3 sm:h-4 rounded w-11/12 sm:w-5/6 ${
-                        darkMode ? "bg-gray-600" : "bg-gray-300"
-                      }`}
-                    ></div>
-                    <div
-                      className={`h-3 sm:h-4 rounded w-10/12 sm:w-4/5 ${
-                        darkMode ? "bg-gray-600" : "bg-gray-300"
-                      }`}
-                    ></div>
-
-                    {/* Code block skeleton - Mobile responsive */}
-                    <div
-                      className={`rounded-lg overflow-hidden mt-4 lg:mt-6 ${
-                        darkMode ? "bg-gray-900" : "bg-gray-100"
-                      }`}
-                    >
+                    {/* Content skeleton - Responsive */}
+                    <div className="space-y-3 lg:space-y-4">
                       <div
-                        className={`px-3 sm:px-4 py-2 flex items-center justify-between ${
-                          darkMode ? "bg-gray-800" : "bg-gray-200"
+                        className={`h-3 sm:h-4 rounded w-full ${
+                          darkMode ? "bg-gray-600" : "bg-gray-300"
+                        }`}
+                      ></div>
+                      <div
+                        className={`h-3 sm:h-4 rounded w-11/12 sm:w-5/6 ${
+                          darkMode ? "bg-gray-600" : "bg-gray-300"
+                        }`}
+                      ></div>
+                      <div
+                        className={`h-3 sm:h-4 rounded w-10/12 sm:w-4/5 ${
+                          darkMode ? "bg-gray-600" : "bg-gray-300"
+                        }`}
+                      ></div>
+
+                      {/* Code block skeleton - Mobile responsive */}
+                      <div
+                        className={`rounded-lg overflow-hidden mt-4 lg:mt-6 ${
+                          darkMode ? "bg-gray-900" : "bg-gray-100"
                         }`}
                       >
                         <div
-                          className={`h-3 sm:h-4 rounded w-12 sm:w-16 ${
-                            darkMode ? "bg-gray-700" : "bg-gray-300"
+                          className={`px-3 sm:px-4 py-2 flex items-center justify-between ${
+                            darkMode ? "bg-gray-800" : "bg-gray-200"
                           }`}
-                        ></div>
-                        <div className="flex space-x-1">
-                          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full"></div>
-                          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-500 rounded-full"></div>
-                          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
+                        >
+                          <div
+                            className={`h-3 sm:h-4 rounded w-12 sm:w-16 ${
+                              darkMode ? "bg-gray-700" : "bg-gray-300"
+                            }`}
+                          ></div>
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-500 rounded-full"></div>
+                            <div className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-500 rounded-full"></div>
+                            <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full"></div>
+                          </div>
+                        </div>
+                        <div className="p-3 sm:p-4 space-y-2">
+                          <div
+                            className={`h-2.5 sm:h-3 rounded w-3/4 ${
+                              darkMode ? "bg-gray-700" : "bg-gray-300"
+                            }`}
+                          ></div>
+                          <div
+                            className={`h-2.5 sm:h-3 rounded w-1/2 ${
+                              darkMode ? "bg-gray-700" : "bg-gray-300"
+                            }`}
+                          ></div>
+                          <div
+                            className={`h-2.5 sm:h-3 rounded w-5/6 ${
+                              darkMode ? "bg-gray-700" : "bg-gray-300"
+                            }`}
+                          ></div>
                         </div>
                       </div>
-                      <div className="p-3 sm:p-4 space-y-2">
+
+                      <div
+                        className={`h-3 sm:h-4 rounded w-full ${
+                          darkMode ? "bg-gray-600" : "bg-gray-300"
+                        }`}
+                      ></div>
+                      <div
+                        className={`h-3 sm:h-4 rounded w-3/4 ${
+                          darkMode ? "bg-gray-600" : "bg-gray-300"
+                        }`}
+                      ></div>
+                      <div
+                        className={`h-3 sm:h-4 rounded w-4/5 ${
+                          darkMode ? "bg-gray-600" : "bg-gray-300"
+                        }`}
+                      ></div>
+                    </div>
+
+                    {/* Status text - Mobile responsive */}
+                    <div className="mt-6 lg:mt-8 text-center">
+                      <p
+                        className={`text-xs sm:text-sm ${
+                          darkMode ? "text-gray-300" : "text-gray-600"
+                        }`}
+                      >
+                        🧠 AI is crafting your personalized explanation...
+                      </p>
+                      <div
+                        className={`w-48 sm:w-64 rounded-full h-1.5 sm:h-2 mx-auto mt-2 sm:mt-3 ${
+                          darkMode ? "bg-gray-700" : "bg-gray-200"
+                        }`}
+                      >
                         <div
-                          className={`h-2.5 sm:h-3 rounded w-3/4 ${
-                            darkMode ? "bg-gray-700" : "bg-gray-300"
-                          }`}
-                        ></div>
-                        <div
-                          className={`h-2.5 sm:h-3 rounded w-1/2 ${
-                            darkMode ? "bg-gray-700" : "bg-gray-300"
-                          }`}
-                        ></div>
-                        <div
-                          className={`h-2.5 sm:h-3 rounded w-5/6 ${
-                            darkMode ? "bg-gray-700" : "bg-gray-300"
-                          }`}
+                          className="bg-gradient-to-r from-indigo-600 to-purple-600 h-1.5 sm:h-2 rounded-full animate-pulse transition-all duration-1000"
+                          style={{ width: "60%" }}
                         ></div>
                       </div>
                     </div>
-
-                    <div
-                      className={`h-3 sm:h-4 rounded w-full ${
-                        darkMode ? "bg-gray-600" : "bg-gray-300"
-                      }`}
-                    ></div>
-                    <div
-                      className={`h-3 sm:h-4 rounded w-3/4 ${
-                        darkMode ? "bg-gray-600" : "bg-gray-300"
-                      }`}
-                    ></div>
-                    <div
-                      className={`h-3 sm:h-4 rounded w-4/5 ${
-                        darkMode ? "bg-gray-600" : "bg-gray-300"
-                      }`}
-                    ></div>
                   </div>
-
-                  {/* Status text - Mobile responsive */}
-                  <div className="mt-6 lg:mt-8 text-center">
-                    <p
-                      className={`text-xs sm:text-sm ${
-                        darkMode ? "text-gray-300" : "text-gray-600"
-                      }`}
-                    >
-                      🧠 AI is crafting your personalized explanation...
-                    </p>
-                    <div
-                      className={`w-48 sm:w-64 rounded-full h-1.5 sm:h-2 mx-auto mt-2 sm:mt-3 ${
-                        darkMode ? "bg-gray-700" : "bg-gray-200"
-                      }`}
-                    >
-                      <div
-                        className="bg-gradient-to-r from-indigo-600 to-purple-600 h-1.5 sm:h-2 rounded-full animate-pulse transition-all duration-1000"
-                        style={{ width: "60%" }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
                 </div>
               </div>
             )}
