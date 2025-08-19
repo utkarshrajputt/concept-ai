@@ -19,11 +19,24 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 DATABASE_PATH = 'explanations.db'
 
 # Debug: Check if API key is loaded
-print(f"OPENROUTER_API_KEY loaded: {'Yes' if OPENROUTER_API_KEY else 'No'}")
+api_key_status = 'Yes' if OPENROUTER_API_KEY else 'No'
+print(f"OPENROUTER_API_KEY loaded: {api_key_status}")
 if OPENROUTER_API_KEY:
     print(f"API Key starts with: {OPENROUTER_API_KEY[:10]}...")
 else:
     print("ERROR: No API key found in environment variables")
+    print("Available environment variables:")
+    for key in os.environ.keys():
+        if 'OPENROUTER' in key or 'API' in key:
+            print(f"  {key}: {'SET' if os.environ[key] else 'EMPTY'}")
+
+@app.errorhandler(500)
+def handle_500_error(e):
+    """Handle 500 errors with detailed logging"""
+    print(f"500 Error occurred: {str(e)}")
+    import traceback
+    print(f"Traceback: {traceback.format_exc()}")
+    return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
 
 def init_db():
     """Initialize the SQLite database"""
@@ -178,6 +191,11 @@ def get_ai_explanation(topic, level):
 def explain_concept():
     """Main endpoint to get concept explanations"""
     try:
+        # Check if API key is available first
+        if not OPENROUTER_API_KEY:
+            print("ERROR: OPENROUTER_API_KEY is not set")
+            return jsonify({'error': 'OpenRouter API key not configured on server'}), 500
+        
         data = request.get_json()
         
         if not data:
@@ -200,24 +218,33 @@ def explain_concept():
         
         # Check cache first (skip if force_refresh is True)
         if not force_refresh:
-            cached_explanation = get_cached_explanation(topic, level)
-            if cached_explanation:
-                return jsonify({
-                    'topic': topic,
-                    'level': level,
-                    'explanation': cached_explanation,
-                    'cached': True,
-                    'regenerated': False
-                })
+            try:
+                cached_explanation = get_cached_explanation(topic, level)
+                if cached_explanation:
+                    return jsonify({
+                        'topic': topic,
+                        'level': level,
+                        'explanation': cached_explanation,
+                        'cached': True,
+                        'regenerated': False
+                    })
+            except Exception as cache_error:
+                print(f"Cache error (non-fatal): {cache_error}")
+                # Continue to AI explanation if cache fails
         
         # Get AI explanation
         explanation, error = get_ai_explanation(topic, level)
         
         if error:
+            print(f"AI explanation error: {error}")
             return jsonify({'error': error}), 500
         
         # Save to cache (replace existing if force_refresh was used)
-        save_explanation(topic, level, explanation)
+        try:
+            save_explanation(topic, level, explanation)
+        except Exception as cache_error:
+            print(f"Cache save error (non-fatal): {cache_error}")
+            # Continue even if caching fails
         
         return jsonify({
             'topic': topic,
@@ -228,6 +255,9 @@ def explain_concept():
         })
         
     except Exception as e:
+        print(f"Unexpected error in explain_concept: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/analytics', methods=['GET'])
@@ -313,6 +343,17 @@ def get_suggestions():
 def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'timestamp': datetime.now().isoformat()})
+
+@app.route('/debug/env', methods=['GET'])
+def debug_env():
+    """Debug endpoint to check environment variables (for troubleshooting)"""
+    return jsonify({
+        'api_key_set': bool(OPENROUTER_API_KEY),
+        'api_key_length': len(OPENROUTER_API_KEY) if OPENROUTER_API_KEY else 0,
+        'flask_env': os.getenv('FLASK_ENV', 'not_set'),
+        'port': os.environ.get('PORT', 'not_set'),
+        'available_env_vars': [key for key in os.environ.keys() if 'OPENROUTER' in key or 'API' in key or 'FLASK' in key]
+    })
 
 @app.route('/cache/stats', methods=['GET'])
 def cache_stats():
