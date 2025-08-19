@@ -176,7 +176,7 @@ def get_ai_explanation(topic, level):
     max_tokens = 800 if level.lower() in ['graduate', 'advanced'] else 600
     
     payload = {
-        "model": "openrouter/auto",  # Automatically picks the best free model
+        "model": "google/gemini-flash-1.5-8b",  # Free Gemini Flash model
         "messages": [
             {
                 "role": "system",
