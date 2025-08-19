@@ -40,22 +40,38 @@ def handle_500_error(e):
 
 def init_db():
     """Initialize the SQLite database"""
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS explanations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            topic TEXT NOT NULL,
-            level TEXT NOT NULL,
-            explanation TEXT NOT NULL,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(topic, level)
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS explanations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                topic TEXT NOT NULL,
+                level TEXT NOT NULL,
+                explanation TEXT NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(topic, level)
+            )
+        ''')
+        
+        conn.commit()
+        print("Database initialized successfully")
+        
+        # Test the table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='explanations'")
+        result = cursor.fetchone()
+        if result:
+            print("Explanations table confirmed to exist")
+        else:
+            print("ERROR: Explanations table was not created!")
+            
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+    finally:
+        conn.close()
 
 def normalize_topic(topic):
     """
@@ -91,38 +107,53 @@ def normalize_topic(topic):
 
 def get_cached_explanation(topic, level):
     """Check if explanation exists in cache using normalized topic"""
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    
-    # Normalize the topic for consistent lookup
-    normalized_topic = normalize_topic(topic)
-    
-    cursor.execute(
-        'SELECT explanation FROM explanations WHERE topic = ? AND level = ?',
-        (normalized_topic, level.lower())
-    )
-    
-    result = cursor.fetchone()
-    conn.close()
-    
-    return result[0] if result else None
+    try:
+        # Ensure database exists
+        init_db()
+        
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        
+        # Normalize the topic for consistent lookup
+        normalized_topic = normalize_topic(topic)
+        
+        cursor.execute(
+            'SELECT explanation FROM explanations WHERE topic = ? AND level = ?',
+            (normalized_topic, level.lower())
+        )
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        return result[0] if result else None
+        
+    except Exception as e:
+        print(f"Cache retrieval error: {e}")
+        return None
 
 def save_explanation(topic, level, explanation):
     """Save explanation to cache using normalized topic"""
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    
-    # Normalize the topic for consistent storage
-    normalized_topic = normalize_topic(topic)
-    
     try:
+        # Ensure database exists
+        init_db()
+        
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        
+        # Normalize the topic for consistent storage
+        normalized_topic = normalize_topic(topic)
+        
         cursor.execute(
             'INSERT OR REPLACE INTO explanations (topic, level, explanation) VALUES (?, ?, ?)',
             (normalized_topic, level.lower(), explanation)
         )
         conn.commit()
+        print(f"Explanation saved for topic: {normalized_topic}, level: {level}")
+        
     except Exception as e:
         print(f"Error saving to database: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
     finally:
         conn.close()
 
@@ -166,9 +197,9 @@ def get_ai_explanation(topic, level):
     }
     
     try:
-        # Adjust timeout for Render's worker limits (max 25 seconds to stay under 30s worker timeout)
-        timeout_duration = 25 if level.lower() in ['graduate', 'advanced'] else 20
-        print(f"Making API request with {timeout_duration}s timeout for level: {level}")
+        # Adjust timeout for Render's worker limits (max 20 seconds to stay well under 30s worker timeout)
+        timeout_duration = 20 if level.lower() in ['graduate', 'advanced'] else 15
+        print(f"Level received: '{level}', Level processed: '{level.lower()}', Using timeout: {timeout_duration}s")
         response = requests.post(OPENROUTER_URL, json=payload, headers=headers, timeout=timeout_duration)
         response.raise_for_status()
         
