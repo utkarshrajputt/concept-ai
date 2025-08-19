@@ -2564,26 +2564,74 @@ function App() {
         </div>
       </header>
 
-      {/* Responsive Layout - Mobile optimized, Desktop unchanged */}
-      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-64px)] sm:min-h-[calc(100vh-80px)]">
-        {/* Left Sidebar - Desktop: same as before, Mobile: optimized */}
+      {/* Responsive Layout - Mobile optimized for explanation space and keyboard */}
+      <div className="flex flex-col lg:flex-row min-h-[calc(100vh-64px)] min-h-[calc(100dvh-64px)] sm:min-h-[calc(100vh-80px)]">
+        {/* Left Sidebar - Compact on mobile, full on desktop */}
         <div
-          className={`w-full lg:w-80 lg:min-w-80 backdrop-blur-sm border-b lg:border-b-0 lg:border-r border-opacity-20 transition-colors duration-300 ${
+          className={`w-full lg:w-80 lg:min-w-80 border-b lg:border-b-0 lg:border-r transition-colors duration-300 ${
             darkMode
-              ? "bg-gray-900/40 border-gray-700"
-              : "bg-white/60 border-white"
-          } ${
-            // Mobile-specific: make sidebar more compact and responsive
-            "lg:p-3 lg:sm:p-4 lg:overflow-y-auto " +
-            "p-2 pb-3 overflow-y-auto max-h-[40vh] lg:max-h-none"
-          }`}
+              ? "bg-gray-900/95 border-gray-800"
+              : "bg-white/95 border-gray-200"
+          } lg:p-4 lg:overflow-y-auto p-2 lg:pb-4`}
         >
-          <div className="space-y-2 lg:space-y-3 lg:sm:space-y-4">
+          <div className="space-y-3 lg:space-y-4">
+            {/* Compact Random Topic Button - Prime Position */}
+            <button
+              onClick={() => {
+                const quickTopics = [
+                  "Artificial Intelligence",
+                  "Machine Learning", 
+                  "Quantum Computing",
+                  "Blockchain Technology",
+                  "Climate Change",
+                  "Space Exploration",
+                  "Gene Editing",
+                  "Renewable Energy",
+                  "Neural Networks",
+                  "Cryptocurrency",
+                  "Virtual Reality",
+                  "Nanotechnology",
+                  "Biotechnology",
+                  "Solar Energy",
+                  "3D Printing",
+                  "Robotics",
+                ];
+                const levels = ["eli5", "student", "graduate", "advanced"];
+
+                const randomTopic = quickTopics[Math.floor(Math.random() * quickTopics.length)];
+                const randomLevel = levels[Math.floor(Math.random() * levels.length)];
+
+                setTopic(randomTopic);
+                setLevel(randomLevel);
+
+                setRandomTopicNotification(true);
+                setTimeout(() => setRandomTopicNotification(false), 5000);
+              }}
+              className={`w-full p-2 lg:p-3 rounded-lg transition-all duration-200 group border ${
+                darkMode
+                  ? "bg-gradient-to-r from-blue-600 to-purple-600 border-blue-500 hover:from-blue-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg"
+                  : "bg-gradient-to-r from-blue-600 to-purple-600 border-blue-500 hover:from-blue-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="p-1 lg:p-1.5 bg-white/20 rounded-md">
+                    <Lightbulb className="w-3 h-3 lg:w-4 lg:h-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold text-xs lg:text-sm">Random Topic</div>
+                    <div className="text-[10px] lg:text-xs opacity-90 hidden lg:block">Discover something new</div>
+                  </div>
+                </div>
+                <ChevronRight className="w-3 h-3 lg:w-4 lg:h-4 opacity-70 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </button>
+
             {/* Topic Input with Suggestions - More compact */}
-            <div className="space-y-1.5 lg:space-y-2">
+            <div className="space-y-2 lg:space-y-3">
               <label
-                className={`block text-sm font-semibold ${
-                  darkMode ? "text-gray-200" : "text-gray-900"
+                className={`block text-sm font-medium ${
+                  darkMode ? "text-gray-300" : "text-gray-700"
                 }`}
               >
                 What would you like to learn?
@@ -2598,73 +2646,62 @@ function App() {
                   onBlur={handleInputBlur}
                   onKeyDown={handleKeyDown}
                   placeholder="Enter any concept... (Ctrl+K to focus)"
-                  className={`w-full pl-3 pr-10 py-2 lg:pl-4 lg:pr-12 lg:py-2.5 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 backdrop-blur-sm placeholder-gray-400 ${
+                  className={`w-full pl-4 pr-12 py-3 text-sm border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-gray-400 ${
                     darkMode
-                      ? "bg-gray-800/80 border-gray-700 text-white"
-                      : "bg-white/80 border-gray-200 text-gray-900"
+                      ? "bg-gray-800 border-gray-700 text-white"
+                      : "bg-white border-gray-300 text-gray-900"
                   } ${
                     !topic.trim() && topic.length > 0
-                      ? "border-red-300 focus:ring-red-300"
+                      ? "border-red-400 focus:ring-red-400"
                       : ""
                   }`}
                   disabled={loading}
                 />
-                <Sparkles className="absolute right-2.5 top-2.5 lg:right-3 lg:top-3 w-4 h-4 text-indigo-400 pointer-events-none" />
+                <Sparkles className="absolute right-4 top-3.5 w-4 h-4 text-blue-500 pointer-events-none" />
 
-                {/* Enhanced Suggestions Dropdown */}
+                {/* Modern Suggestions Dropdown */}
                 {showSuggestions && suggestions.length > 0 && (
                   <div
-                    className={`absolute z-20 w-full mt-1 border rounded-xl shadow-2xl max-h-80 overflow-y-auto backdrop-blur-sm ${
+                    className={`absolute z-20 w-full mt-2 border rounded-xl shadow-lg max-h-64 overflow-y-auto ${
                       darkMode
-                        ? "bg-gray-800/95 border-gray-600"
-                        : "bg-white/95 border-gray-200"
+                        ? "bg-gray-800 border-gray-700"
+                        : "bg-white border-gray-200"
                     }`}
                   >
                     <div
-                      className={`p-3 text-xs font-semibold uppercase tracking-wide rounded-t-xl border-b ${
+                      className={`px-3 py-2 text-xs font-medium border-b ${
                         darkMode
-                          ? "text-gray-400 bg-gray-700/50 border-gray-600"
-                          : "text-gray-500 bg-gray-50 border-gray-100"
+                          ? "text-gray-400 border-gray-700"
+                          : "text-gray-500 border-gray-200"
                       }`}
                     >
                       <Search className="w-3 h-3 inline mr-1" />
-                      Smart Suggestions ({suggestions.length})
+                      Suggestions ({suggestions.length})
                     </div>
                     {suggestions.map((suggestion, index) => (
                       <button
                         key={suggestion.id || index}
                         onClick={() => selectSuggestion(suggestion)}
-                        className={`w-full text-left px-4 py-3 text-sm transition-all duration-200 flex items-center space-x-3 border-b last:border-b-0 ${
+                        className={`w-full text-left px-4 py-3 text-sm transition-all duration-200 flex items-center space-x-3 hover:bg-gray-50 dark:hover:bg-gray-700 ${
                           index === selectedSuggestionIndex
                             ? darkMode
-                              ? "bg-indigo-900/50 text-indigo-300 border-indigo-700/50"
-                              : "bg-indigo-50 text-indigo-700 border-indigo-100"
+                              ? "bg-blue-900/30 text-blue-300"
+                              : "bg-blue-50 text-blue-700"
                             : darkMode
-                            ? "text-gray-300 hover:bg-gray-700/50 hover:text-indigo-400 border-gray-700/30"
-                            : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 border-gray-100"
+                            ? "text-gray-300"
+                            : "text-gray-700"
                         }`}
                       >
-                        {/* Match Type Indicator */}
+                        {/* Simple Level Icon */}
                         <div
-                          className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                            suggestion.matchType === "exact"
-                              ? "bg-green-400"
-                              : suggestion.matchType === "contains"
-                              ? "bg-yellow-400"
-                              : "bg-blue-400"
-                          }`}
-                        />
-
-                        {/* Level Icon */}
-                        <div
-                          className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${
                             suggestion.level === level
                               ? darkMode
-                                ? "bg-indigo-800/60"
-                                : "bg-indigo-100"
+                                ? "bg-blue-600/60 text-blue-300"
+                                : "bg-blue-100 text-blue-600"
                               : darkMode
-                              ? "bg-gray-700/60"
-                              : "bg-gray-100"
+                              ? "bg-gray-700 text-gray-400"
+                              : "bg-gray-100 text-gray-500"
                           }`}
                         >
                           {DIFFICULTY_LEVELS.find(
@@ -2818,8 +2855,8 @@ function App() {
               </div>
             </div>
 
-            {/* Enhanced Difficulty Levels - Desktop: full, Mobile: collapsible */}
-            <div className="space-y-1.5 lg:space-y-2">
+            {/* Modern Difficulty Levels */}
+            <div className="space-y-2 lg:space-y-3">
               {/* Mobile: Compact level indicator + expand button */}
               <div className="lg:hidden">
                 <div className="flex items-center justify-between">
@@ -2883,18 +2920,18 @@ function App() {
               >
                 <div className="flex items-center justify-between">
                   <label
-                    className={`block text-sm font-semibold ${
-                      darkMode ? "text-gray-200" : "text-gray-900"
+                    className={`text-sm font-medium ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
                     }`}
                   >
-                    Choose explanation level
+                    Explanation Level
                   </label>
-                  {/* Progress indicator */}
+                  {/* Simplified Progress Dots */}
                   <div className="flex items-center space-x-1">
                     {DIFFICULTY_LEVELS.map((diffLevel, index) => (
                       <div
                         key={diffLevel.value}
-                        className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                        className={`w-2 h-2 rounded-full transition-all duration-200 ${
                           DIFFICULTY_LEVELS.findIndex(
                             (l) => l.value === level
                           ) >= index
@@ -2926,43 +2963,31 @@ function App() {
                           changeLevelWithFeedback(diffLevel.value, level)
                         }
                         disabled={loading}
-                        className={`group relative w-full p-2.5 sm:p-3 rounded-lg border-2 transition-all duration-300 text-left overflow-hidden ${
+                        className={`group relative w-full p-3 rounded-xl border transition-all duration-200 text-left ${
                           isSelected
-                            ? `border-transparent bg-gradient-to-r ${diffLevel.color} text-white shadow-lg transform scale-105 shadow-indigo-500/25`
+                            ? `border-transparent bg-gradient-to-r ${diffLevel.color} text-white shadow-md`
                             : darkMode
-                            ? "border-gray-600 bg-gray-800/80 hover:border-gray-500 hover:bg-gray-800 text-gray-200 hover:shadow-lg"
-                            : "border-gray-200 bg-white/80 hover:border-gray-300 hover:bg-white text-gray-700 hover:shadow-lg"
-                        } ${
-                          levelChanged && isSelected
-                            ? "animate-pulse ring-4 ring-blue-400/50"
-                            : ""
+                            ? "border-gray-700 bg-gray-800 hover:border-gray-600 text-gray-200 hover:bg-gray-700"
+                            : "border-gray-200 bg-white hover:border-gray-300 text-gray-700 hover:bg-gray-50"
                         }`}
                       >
-                        {/* Background pattern for selected state */}
-                        {isSelected && (
-                          <div className="absolute inset-0 opacity-10">
-                            <div className="absolute top-0 right-0 w-12 h-12 bg-white rounded-full -translate-y-6 translate-x-6"></div>
-                            <div className="absolute bottom-0 left-0 w-6 h-6 bg-white rounded-full translate-y-3 -translate-x-3"></div>
-                          </div>
-                        )}
-
-                        <div className="relative flex items-center space-x-2">
+                        <div className="flex items-center space-x-3">
                           <div
-                            className={`p-1.5 rounded-lg transition-all duration-200 ${
+                            className={`p-2 rounded-lg ${
                               isSelected
-                                ? "bg-white/20 shadow-lg"
+                                ? "bg-white/20"
                                 : darkMode
-                                ? "bg-gray-700 group-hover:bg-gray-600"
-                                : `${diffLevel.bgColor} group-hover:shadow-md`
+                                ? "bg-gray-700"
+                                : "bg-gray-100"
                             }`}
                           >
                             <IconComponent
-                              className={`w-4 h-4 transition-transform duration-200 ${
+                              className={`w-4 h-4 ${
                                 isSelected
-                                  ? "text-white scale-110"
+                                  ? "text-white"
                                   : darkMode
-                                  ? "text-gray-300 group-hover:text-white"
-                                  : `${diffLevel.textColor} group-hover:scale-105`
+                                  ? "text-gray-300"
+                                  : "text-gray-600"
                               }`}
                             />
                           </div>
@@ -3080,305 +3105,198 @@ function App() {
               </button>
             </div>
 
-            {/* Enhanced Recent Topics - Desktop: full, Mobile: collapsible */}
+            {/* Modern Recent Topics Section - Desktop Only */}
             {localHistory.length > 0 && (
               <div
-                className={`pt-2 lg:pt-3 border-t ${
-                  darkMode ? "border-gray-600/50" : "border-gray-200"
+                className={`hidden lg:block pt-4 border-t ${
+                  darkMode ? "border-gray-700" : "border-gray-200"
                 }`}
               >
-                {/* Mobile: Compact recent topics button */}
-                <div className="lg:hidden">
-                  <button
-                    onClick={() =>
-                      setMobileRecentExpanded(!mobileRecentExpanded)
-                    }
-                    className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors ${
-                      darkMode
-                        ? "bg-gray-800/50 hover:bg-gray-700/50 text-gray-200"
-                        : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                <div className="flex items-center justify-between mb-3">
+                  <h3
+                    className={`text-sm font-semibold ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
                     }`}
                   >
-                    <span className="text-sm font-medium">
-                      Recent ({localHistory.length})
-                    </span>
-                    <ChevronRight
-                      className={`w-4 h-4 transition-transform ${
-                        mobileRecentExpanded ? "rotate-90" : ""
-                      }`}
-                    />
+                    Recent Topics
+                  </h3>
+                  <button
+                    onClick={() => setShowHistory(true)}
+                    className={`text-xs px-2 py-1 rounded-md transition-colors ${
+                      darkMode
+                        ? "text-blue-400 hover:text-blue-300 bg-blue-900/20 hover:bg-blue-900/30"
+                        : "text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100"
+                    }`}
+                  >
+                    View All
                   </button>
                 </div>
 
-                {/* Desktop: Always show + Mobile: Show when expanded */}
-                <div
-                  className={`${
-                    mobileRecentExpanded ? "block" : "hidden"
-                  } lg:block`}
-                >
-                  <div className="hidden lg:flex items-center justify-between mb-2">
-                    <h3
-                      className={`text-sm font-semibold ${
-                        darkMode ? "text-gray-200" : "text-gray-700"
-                      }`}
-                    >
-                      Recent Topics
-                    </h3>
-                    <button
-                      onClick={() => setShowHistory(true)}
-                      className={`text-xs ${
-                        darkMode
-                          ? "text-indigo-400 hover:text-indigo-300"
-                          : "text-indigo-600 hover:text-indigo-700"
-                      } transition-colors`}
-                    >
-                      View All
-                    </button>
-                  </div>
+                <div className="space-y-2">
+                  {localHistory.slice(0, 3).map((item, index) => {
+                    const timeAgo = new Date(item.timestamp)
+                      ? (() => {
+                          const now = new Date();
+                          const then = new Date(item.timestamp);
+                          const diffInHours = Math.floor((now - then) / (1000 * 60 * 60));
+                          if (diffInHours < 1) return "Now";
+                          if (diffInHours < 24) return `${diffInHours}h`;
+                          const diffInDays = Math.floor(diffInHours / 24);
+                          if (diffInDays === 1) return "1d";
+                          if (diffInDays < 7) return `${diffInDays}d`;
+                          return `${Math.floor(diffInDays / 7)}w`;
+                        })()
+                      : "Recent";
 
-                  {/* Enhanced Recent Topics with timestamps and badges - responsive count */}
-                  <div className="space-y-1.5 mt-2 lg:mt-0">
-                    {localHistory
-                      .slice(0, window.innerWidth < 1024 ? 3 : 2)
-                      .map((item, index) => {
-                        const timeAgo = new Date(item.timestamp)
-                          ? (() => {
-                              const now = new Date();
-                              const then = new Date(item.timestamp);
-                              const diffInHours = Math.floor(
-                                (now - then) / (1000 * 60 * 60)
-                              );
-                              if (diffInHours < 1) return "Now";
-                              if (diffInHours < 24) return `${diffInHours}h`;
-                              const diffInDays = Math.floor(diffInHours / 24);
-                              if (diffInDays === 1) return "1d";
-                              if (diffInDays < 7) return `${diffInDays}d`;
-                              return `${Math.floor(diffInDays / 7)}w`;
-                            })()
-                          : "Recent";
+                    const levelData = DIFFICULTY_LEVELS.find((l) => l.value === item.level);
 
-                        const levelData = DIFFICULTY_LEVELS.find(
-                          (l) => l.value === item.level
-                        );
-
-                        return (
-                          <button
-                            key={index}
-                            onClick={() => {
-                              setTopic(item.topic);
-                              changeLevelWithFeedback(item.level, level);
-                              setError("");
-                              // Close mobile sections after selection
-                              setMobileRecentExpanded(false);
-                              setMobileOptionsExpanded(false);
-                            }}
-                            className={`w-full p-2.5 rounded-lg border transition-all duration-200 hover:scale-[1.02] group ${
-                              darkMode
-                                ? "bg-gray-800/60 border-gray-600/50 hover:bg-gray-700/70 hover:border-indigo-500/30"
-                                : "bg-gray-50/80 border-gray-200 hover:bg-indigo-50 hover:border-indigo-300"
-                            }`}
-                            title={`Click to explore: ${item.topic}`}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1 text-left min-w-0">
-                                <div
-                                  className={`font-medium text-sm truncate ${
-                                    darkMode ? "text-gray-200" : "text-gray-800"
-                                  }`}
-                                >
-                                  {item.topic}
-                                </div>
-                                <div className="flex items-center space-x-2 mt-0.5">
-                                  <span
-                                    className={`inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded-full ${
-                                      levelData
-                                        ? `bg-gradient-to-r ${levelData.color} text-white`
-                                        : darkMode
-                                        ? "bg-gray-700 text-gray-300"
-                                        : "bg-gray-200 text-gray-700"
-                                    }`}
-                                  >
-                                    {levelData?.label || item.level}
-                                  </span>
-                                  <span
-                                    className={`text-xs ${
-                                      darkMode
-                                        ? "text-gray-400"
-                                        : "text-gray-500"
-                                    }`}
-                                  >
-                                    {timeAgo}
-                                  </span>
-                                  {item.cached && (
-                                    <span
-                                      className={`inline-flex items-center text-xs ${
-                                        darkMode
-                                          ? "text-green-400"
-                                          : "text-green-600"
-                                      }`}
-                                    >
-                                      <div className="w-1 h-1 bg-current rounded-full mr-1"></div>
-                                      Cached
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <ChevronRight
-                                className={`w-3 h-3 transition-transform group-hover:translate-x-1 ${
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setTopic(item.topic);
+                          changeLevelWithFeedback(item.level, level);
+                          setError("");
+                        }}
+                        className={`w-full p-3 rounded-xl border transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 group text-left ${
+                          darkMode
+                            ? "bg-gray-800/50 border-gray-700/50 hover:bg-gray-800 hover:border-gray-600"
+                            : "bg-white/80 border-gray-200 hover:bg-white hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div
+                              className={`font-medium text-sm truncate mb-1 ${
+                                darkMode ? "text-gray-200" : "text-gray-800"
+                              }`}
+                            >
+                              {item.topic}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md ${
+                                  levelData
+                                    ? darkMode
+                                      ? `bg-gradient-to-r ${levelData.color} text-white`
+                                      : `bg-gradient-to-r ${levelData.color} text-white`
+                                    : darkMode
+                                    ? "bg-gray-700 text-gray-300"
+                                    : "bg-gray-200 text-gray-700"
+                                }`}
+                              >
+                                {levelData?.label || item.level}
+                              </span>
+                              <span
+                                className={`text-xs ${
                                   darkMode ? "text-gray-400" : "text-gray-500"
                                 }`}
-                              />
+                              >
+                                {timeAgo}
+                              </span>
+                              {item.cached && (
+                                <div className={`w-2 h-2 rounded-full ${
+                                  darkMode ? "bg-green-400" : "bg-green-500"
+                                }`} title="Cached"></div>
+                              )}
                             </div>
-                          </button>
-                        );
-                      })}
-                  </div>
+                          </div>
+                          <ChevronRight
+                            className={`w-4 h-4 opacity-40 group-hover:opacity-70 group-hover:translate-x-1 transition-all ${
+                              darkMode ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Enhanced Feature Cards - Responsive for all screen sizes */}
+            {/* Enhanced Action Cards - Compact on mobile */}
             <div
-              className={`pt-4 border-t ${
-                darkMode ? "border-gray-600/50" : "border-gray-200"
+              className={`pt-2 lg:pt-4 border-t ${
+                darkMode ? "border-gray-700" : "border-gray-200"
               }`}
             >
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                {/* Quick Topics Card */}
-                <button
-                  onClick={() => {
-                    const quickTopics = [
-                      "Artificial Intelligence",
-                      "Machine Learning",
-                      "Quantum Computing",
-                      "Blockchain Technology",
-                      "Climate Change",
-                      "Space Exploration",
-                      "Gene Editing",
-                      "Renewable Energy",
-                      "Neural Networks",
-                      "Cryptocurrency",
-                      "Virtual Reality",
-                      "Nanotechnology",
-                      "Biotechnology",
-                      "Solar Energy",
-                      "3D Printing",
-                      "Robotics",
-                    ];
-                    const levels = ["eli5", "student", "graduate", "advanced"];
-
-                    const randomTopic =
-                      quickTopics[
-                        Math.floor(Math.random() * quickTopics.length)
-                      ];
-                    const randomLevel =
-                      levels[Math.floor(Math.random() * levels.length)];
-
-                    setTopic(randomTopic);
-                    setLevel(randomLevel);
-
-                    // Show notification
-                    setRandomTopicNotification(true);
-                    setTimeout(() => setRandomTopicNotification(false), 5000);
-                  }}
-                  className={`group relative p-2 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 hover:shadow-lg hover:scale-105 overflow-hidden text-left ${
-                    darkMode
-                      ? "bg-gradient-to-br from-purple-900/40 to-violet-900/40 border-purple-800/50 hover:border-purple-600/50"
-                      : "bg-gradient-to-br from-purple-50 to-violet-100 border-purple-200/50 hover:border-purple-300/50"
-                  }`}
-                >
-                  <div className="relative z-10">
-                    <div
-                      className={`inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full mb-1 sm:mb-2 ${
-                        darkMode ? "bg-purple-500/20" : "bg-purple-500/10"
-                      }`}
-                    >
-                      <Lightbulb
-                        className={`w-3 h-3 sm:w-4 sm:h-4 ${
-                          darkMode ? "text-purple-400" : "text-purple-600"
-                        }`}
-                      />
-                    </div>
-                    <div
-                      className={`text-xs sm:text-sm font-bold ${
-                        darkMode ? "text-purple-400" : "text-purple-600"
-                      }`}
-                    >
-                      Random Topic
-                    </div>
-                    <div
-                      className={`text-[10px] sm:text-xs ${
-                        darkMode ? "text-gray-400" : "text-gray-500"
-                      }`}
-                    >
-                      Topic & level
-                    </div>
-                  </div>
-                  <div
-                    className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
-                      darkMode
-                        ? "bg-gradient-to-r from-purple-500/10 to-violet-500/10"
-                        : "bg-gradient-to-r from-purple-100/50 to-violet-200/50"
-                    }`}
-                  ></div>
-                </button>
-
-                {/* Learning Stats Card */}
+              <div className="grid grid-cols-2 gap-2 lg:gap-3">
+                {/* Enhanced Progress Card */}
                 <button
                   onClick={() => setShowStatsModal(true)}
-                  className={`group relative p-2 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 hover:shadow-lg hover:scale-105 overflow-hidden text-left ${
+                  className={`group p-2 lg:p-4 rounded-lg lg:rounded-xl border transition-all duration-200 text-left hover:shadow-lg hover:-translate-y-0.5 ${
                     darkMode
-                      ? "bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border-emerald-800/50 hover:border-emerald-600/50"
-                      : "bg-gradient-to-br from-emerald-50 to-teal-100 border-emerald-200/50 hover:border-emerald-300/50"
+                      ? "bg-green-900/20 border-green-800/50 hover:border-green-600/50 text-gray-200"
+                      : "bg-green-50 border-green-200/50 hover:border-green-300/50 text-gray-700"
                   }`}
                 >
-                  <div className="relative z-10">
-                    <div
-                      className={`inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full mb-1 sm:mb-2 ${
-                        darkMode ? "bg-emerald-500/20" : "bg-emerald-500/10"
-                      }`}
-                    >
-                      <TrendingUp
-                        className={`w-3 h-3 sm:w-4 sm:h-4 ${
-                          darkMode ? "text-emerald-400" : "text-emerald-600"
-                        }`}
-                      />
+                  <div className="flex items-center space-x-1 lg:space-x-2 mb-1 lg:mb-3">
+                    <div className={`p-1 lg:p-2 rounded-md lg:rounded-lg ${
+                      darkMode ? "bg-green-500/20" : "bg-green-500/10"
+                    }`}>
+                      <TrendingUp className={`w-3 h-3 lg:w-4 lg:h-4 ${darkMode ? "text-green-400" : "text-green-600"}`} />
                     </div>
-                    <div
-                      className={`text-xs sm:text-sm font-bold ${
-                        darkMode ? "text-emerald-400" : "text-emerald-600"
-                      }`}
-                    >
-                      Progress
-                    </div>
-                    <div
-                      className={`text-[10px] sm:text-xs ${
-                        darkMode ? "text-gray-400" : "text-gray-500"
-                      }`}
-                    >
-                      {localHistory.length} topics
-                    </div>
+                    <span className="text-xs lg:text-sm font-semibold">Progress</span>
                   </div>
-                  <div
-                    className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
-                      darkMode
-                        ? "bg-gradient-to-r from-emerald-500/10 to-teal-500/10"
-                        : "bg-gradient-to-r from-emerald-100/50 to-teal-200/50"
-                    }`}
-                  ></div>
+                  <div className={`text-[10px] lg:text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    {localHistory.length} topics
+                  </div>
+                  <div className="mt-1 lg:mt-2 h-0.5 lg:h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-green-500 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.min((localHistory.length / 10) * 100, 100)}%` }}
+                    ></div>
+                  </div>
+                </button>
+
+                {/* Enhanced Recent Card */}
+                <button
+                  onClick={() => setShowHistory(true)}
+                  className={`group p-2 lg:p-4 rounded-lg lg:rounded-xl border transition-all duration-200 text-left hover:shadow-lg hover:-translate-y-0.5 ${
+                    darkMode
+                      ? "bg-blue-900/20 border-blue-800/50 hover:border-blue-600/50 text-gray-200"
+                      : "bg-blue-50 border-blue-200/50 hover:border-blue-300/50 text-gray-700"
+                  }`}
+                >
+                  <div className="flex items-center space-x-1 lg:space-x-2 mb-1 lg:mb-3">
+                    <div className={`p-1 lg:p-2 rounded-md lg:rounded-lg ${
+                      darkMode ? "bg-blue-500/20" : "bg-blue-500/10"
+                    }`}>
+                      <History className={`w-3 h-3 lg:w-4 lg:h-4 ${darkMode ? "text-blue-400" : "text-blue-600"}`} />
+                    </div>
+                    <span className="text-xs lg:text-sm font-semibold">Recent</span>
+                  </div>
+                  <div className={`text-[10px] lg:text-xs ${darkMode ? "text-gray-400" : "text-gray-500"}`}>
+                    View history
+                  </div>
+                  {localHistory.length > 0 && (
+                    <div className="flex -space-x-1 mt-1 lg:mt-2">
+                      {localHistory.slice(0, 3).map((_, i) => (
+                        <div key={i} className={`w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full border ${
+                          darkMode ? "bg-blue-400 border-gray-800" : "bg-blue-500 border-white"
+                        }`}></div>
+                      ))}
+                    </div>
+                  )}
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Mobile Sticky Bottom Bar - Only visible on mobile */}
+        {/* Mobile Sticky Bottom Bar - Responsive to keyboard */}
         <div
-          className={`lg:hidden fixed bottom-0 left-0 right-0 p-2.5 backdrop-blur-lg border-t z-40 transition-colors duration-300 ${
+          className={`lg:hidden fixed bottom-0 left-0 right-0 backdrop-blur-lg border-t z-50 transition-all duration-300 ${
             darkMode
-              ? "bg-gray-900/90 border-gray-700/50"
-              : "bg-white/90 border-gray-200/50"
+              ? "bg-gray-900/95 border-gray-700/50"
+              : "bg-white/95 border-gray-200/50"
           }`}
+          style={{
+            paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
+            paddingTop: '10px',
+            paddingLeft: '10px',
+            paddingRight: '10px'
+          }}
         >
           <div className="flex space-x-2">
             <button
@@ -3469,8 +3387,8 @@ function App() {
             </div>
           </div>
 
-          {/* Main Content Body */}
-          <div className="flex-1 overflow-y-auto p-3 lg:p-4 lg:sm:p-6 pb-16 lg:pb-4 lg:sm:pb-6">
+          {/* Main Content Body - Improved mobile positioning */}
+          <div className="flex-1 overflow-y-auto p-3 lg:p-4 lg:sm:p-6 pb-20 lg:pb-4 lg:sm:pb-6 pt-4 lg:pt-3">
             {error && (
               <div
                 className={`mb-4 sm:mb-6 p-6 rounded-lg sm:rounded-xl border transition-colors duration-300 ${
@@ -3542,7 +3460,7 @@ function App() {
             )}
 
             {!explanation && !loading && !error && (
-              <div className="flex items-center justify-center h-full min-h-[200px] sm:min-h-[300px]">
+              <div className="flex items-start justify-center min-h-[200px] sm:min-h-[300px] pt-8">
                 <div className="text-center max-w-md mx-auto px-4">
                   <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Brain className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
@@ -6203,9 +6121,9 @@ function App() {
         </div>
       )}
 
-      {/* Random Topic Notification */}
+      {/* Random Topic Notification - Hidden on mobile to avoid overlap */}
       {randomTopicNotification && (
-        <div className="fixed top-4 right-4 z-50 transform transition-all duration-300 ease-out">
+        <div className="hidden lg:block fixed top-4 right-4 z-50 transform transition-all duration-300 ease-out">
           <div
             className={`flex items-center space-x-3 px-4 py-3 rounded-lg shadow-lg border ${
               darkMode

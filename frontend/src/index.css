@@ -12,6 +12,27 @@
     color-scheme: dark;
   }
 
+  /* Mobile viewport and keyboard handling */
+  @media screen and (max-width: 1024px) {
+    html {
+      /* Ensure proper mobile viewport behavior */
+      -webkit-text-size-adjust: 100%;
+      /* Prevent zoom on form focus */
+      touch-action: manipulation;
+    }
+    
+    body {
+      /* Prevent body scroll when keyboard is open */
+      overflow-x: hidden;
+    }
+    
+    /* Fix for mobile keyboards pushing content */
+    .mobile-content {
+      height: 100vh;
+      height: 100dvh; /* Dynamic viewport height for better mobile support */
+    }
+  }
+
   /* Smooth transitions for theme changes */
   * {
     transition: background-color 0.3s ease, border-color 0.3s ease,
