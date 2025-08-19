@@ -172,11 +172,11 @@ def get_ai_explanation(topic, level):
     
     system_prompt = level_prompts.get(level.lower(), level_prompts["student"])
     
-    # Adjust max_tokens based on level to balance detail vs speed
-    max_tokens = 2000 if level.lower() in ['graduate', 'advanced'] else 1500
+    # Very conservative max_tokens and timeout for Render's constraints
+    max_tokens = 800 if level.lower() in ['graduate', 'advanced'] else 600
     
     payload = {
-        "model": "deepseek/deepseek-r1:free",  # Using the free version of DeepSeek R1
+        "model": "openai/gpt-3.5-turbo",  # Faster model that works well within time limits
         "messages": [
             {
                 "role": "system",
@@ -197,8 +197,8 @@ def get_ai_explanation(topic, level):
     }
     
     try:
-        # Adjust timeout for Render's worker limits (max 20 seconds to stay well under 30s worker timeout)
-        timeout_duration = 20 if level.lower() in ['graduate', 'advanced'] else 15
+        # Ultra-conservative timeout for Render's 30s worker limit
+        timeout_duration = 12 if level.lower() in ['graduate', 'advanced'] else 10
         print(f"Level received: '{level}', Level processed: '{level.lower()}', Using timeout: {timeout_duration}s")
         response = requests.post(OPENROUTER_URL, json=payload, headers=headers, timeout=timeout_duration)
         response.raise_for_status()
