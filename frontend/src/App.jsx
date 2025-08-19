@@ -321,12 +321,14 @@ const findCachedExplanation = (searchTopic, searchLevel, history) => {
 const formatExplanation = (text) => {
   if (!text) return "";
 
-  // Step 1: Clean and normalize the text
+  // Step 1: Clean and normalize the text with better whitespace control
   let formatted = text
     // Normalize line breaks and remove excessive whitespace
     .replace(/\r\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
+    .replace(/\n{4,}/g, "\n\n") // Allow max 2 consecutive line breaks
+    .replace(/\n{3}/g, "\n\n") // Convert 3 line breaks to 2
     .replace(/\t/g, "  ") // Convert tabs to spaces
+    .replace(/[ \t]+$/gm, "") // Remove trailing spaces on each line
     .trim();
 
   // Step 2: Advanced table processing with proper grouping
@@ -346,13 +348,11 @@ const formatExplanation = (text) => {
       data3
     ) => {
       return `
-
 ### Table ${tableNum}: ${tableName}
 
 | ${col1.trim()} | ${col2.trim()} |
 |${"-".repeat(col1.trim().length + 2)}|${"-".repeat(col2.trim().length + 2)}|
 | ${data1.trim()} | ${data2.trim()} |
-
 `;
     }
   );
@@ -377,7 +377,6 @@ const formatExplanation = (text) => {
             const [, tableNum, tableName, col1, col2, , data1, data2, data3] =
               tableMatch;
             return `
-
 ### Table ${tableNum}: ${tableName}
 
 | ${col1.trim()} | ${col2.trim()} |
@@ -385,7 +384,6 @@ const formatExplanation = (text) => {
               Math.max(col2.trim().length, 10)
             )}|
 | ${data1.trim()} | ${data2.trim()} |
-
 `;
           }
           return table;
@@ -492,12 +490,12 @@ const formatExplanation = (text) => {
 
       if (isHeader && !headerProcessed) {
         processedRows.push(`
-          <div class="table-header grid gap-0" style="grid-template-columns: repeat(${numCols}, 1fr);">
+          <div class="table-header bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 grid gap-0 border-b-2 border-indigo-200 dark:border-indigo-700" style="grid-template-columns: repeat(${numCols}, 1fr);">
             ${cells
               .slice(0, numCols)
               .map(
                 (cell) =>
-                  `<div class="font-bold text-sm p-4 text-center table-header-cell">${cell}</div>`
+                  `<div class="font-bold text-sm p-4 text-center table-header-cell text-black dark:text-gray-200 bg-gradient-to-b from-transparent to-gray-50 dark:to-gray-800">${cell}</div>`
               )
               .join("")}
           </div>
@@ -505,7 +503,7 @@ const formatExplanation = (text) => {
         headerProcessed = true;
       } else {
         processedRows.push(`
-          <div class="table-row grid gap-0" style="grid-template-columns: repeat(${numCols}, 1fr);">
+          <div class="table-row grid gap-0 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" style="grid-template-columns: repeat(${numCols}, 1fr);">
             ${cells
               .slice(0, numCols)
               .map((cell, index) => {
@@ -518,20 +516,25 @@ const formatExplanation = (text) => {
                 if (isCode) {
                   processedCell = cell.replace(
                     /`([^`]+)`/g,
-                    '<code class="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-xs font-mono">$1</code>'
+                    '<code class="bg-indigo-100 dark:bg-indigo-900 px-2 py-1 rounded text-xs font-mono text-indigo-800 dark:text-indigo-300">$1</code>'
                   );
                 }
                 if (isEmphasis) {
                   processedCell = processedCell
                     .replace(
                       /\*\*([^*]+)\*\*/g,
-                      '<strong class="font-semibold">$1</strong>'
+                      '<strong class="font-semibold text-black dark:text-gray-100">$1</strong>'
                     )
-                    .replace(/\*([^*]+)\*/g, '<em class="italic">$1</em>');
+                    .replace(
+                      /\*([^*]+)\*/g,
+                      '<em class="italic text-black dark:text-gray-300">$1</em>'
+                    );
                 }
 
                 return `<div class="p-4 text-sm table-cell ${
-                  index === 0 ? "font-medium" : ""
+                  index === 0
+                    ? "font-medium text-gray-900 dark:text-gray-100"
+                    : "text-gray-700 dark:text-gray-300"
                 }">${processedCell}</div>`;
               })
               .join("")}
@@ -541,68 +544,99 @@ const formatExplanation = (text) => {
     }
 
     if (processedRows.length > 0) {
-      return `<div class="table-container mb-6 rounded-lg overflow-hidden border shadow-lg">
-        ${processedRows.join("")}
+      return `<div class="table-container mb-8 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-xl bg-white dark:bg-gray-800">
+        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+          <div class="flex items-center space-x-2">
+            <div class="w-6 h-6 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">Data Table</span>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          ${processedRows.join("")}
+        </div>
       </div>`;
     }
 
     return "";
   }
 
-  // Step 4: Handle headers with consistent styling
-  // Main headers (### or # or ##)
+  // Step 4: Handle headers with enhanced typography and hierarchy
+  // Main headers (### or # or ##) - Clean styling without gradient lines
   formatted = formatted.replace(/^#{1,3}\s+(.+)$/gm, (match, title) => {
-    return `<div class="header-main mt-8 mb-6 pb-3 border-b-2 border-gray-300">
-      <h2 class="text-2xl font-bold text-gray-900 mb-2">${title}</h2>
+    return `<div class="header-main mt-6 mb-4">
+      <div class="flex items-center">
+        <div class="w-1 h-6 bg-indigo-500 rounded-full mr-3"></div>
+        <h2 class="text-2xl font-bold text-black dark:text-gray-100">${title}</h2>
+      </div>
     </div>`;
   });
 
-  // Sub headers (#### or more)
+  // Sub headers (#### or more) - Clean visual hierarchy without gradient lines
   formatted = formatted.replace(/^#{4,}\s+(.+)$/gm, (match, title) => {
-    return `<div class="header-sub mt-6 mb-4 flex items-center">
-      <div class="w-1 h-6 bg-blue-500 rounded mr-3"></div>
-      <h3 class="text-lg font-semibold text-gray-800">${title}</h3>
+    return `<div class="header-sub mt-4 mb-3">
+      <div class="flex items-center">
+        <div class="w-5 h-5 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+          <div class="w-1.5 h-1.5 bg-white rounded-full"></div>
+        </div>
+        <h3 class="text-lg font-semibold text-black dark:text-gray-200">${title}</h3>
+      </div>
     </div>`;
   });
 
-  // Step 4.5: Handle horizontal rules (---, ***, ___)
+  // Step 4.5: Handle horizontal rules (---, ***, ___) with reduced spacing
   formatted = formatted.replace(/^(\s*)[-*_]{3,}\s*$/gm, () => {
-    return `<div class="horizontal-rule my-8 flex items-center">
+    return `<div class="horizontal-rule my-4 flex items-center">
       <div class="flex-1 h-px bg-gradient-to-r from-transparent via-gray-400 to-transparent"></div>
-      <div class="px-4">
-        <div class="w-2 h-2 bg-gray-400 rounded-full"></div>
+      <div class="px-3">
+        <div class="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
       </div>
       <div class="flex-1 h-px bg-gradient-to-r from-transparent via-gray-400 to-transparent"></div>
     </div>`;
   });
 
-  // Step 5: Handle lists with proper nesting support
-  // Numbered lists (including nested)
+  // Step 5: Handle lists with enhanced visual design and proper nesting
+  // Numbered lists (including nested) - Improved styling
   formatted = formatted.replace(
     /^(\s*)(\d+)\.\s+(.+)$/gm,
     (match, indent, num, content) => {
       const level = Math.floor(indent.length / 2);
-      const marginLeft = level > 0 ? `ml-${level * 6}` : "";
+      const marginLeft = level > 0 ? `ml-${level * 8}` : "";
 
-      return `<div class="numbered-list-item flex items-start space-x-3 mb-3 ${marginLeft}">
-      <div class="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mt-1">
+      return `<div class="numbered-list-item flex items-start space-x-4 mb-4 ${marginLeft}">
+      <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold mt-1 shadow-md">
         ${num}
       </div>
-      <div class="flex-1 text-gray-700 leading-relaxed pt-1">${content}</div>
+      <div class="flex-1 text-gray-700 dark:text-gray-300 leading-relaxed pt-1.5">
+        <div class="prose prose-sm max-w-none">${content}</div>
+      </div>
     </div>`;
     }
   );
 
-  // Bullet points (including nested) - Enhanced detection
+  // Bullet points (including nested) - Enhanced visual design
   formatted = formatted.replace(
     /^(\s*)[-*+•]\s+(.+)$/gm,
     (match, indent, content) => {
       const level = Math.floor(indent.length / 2);
-      const marginLeft = level > 0 ? `ml-${level * 6}` : "";
+      const marginLeft = level > 0 ? `ml-${level * 8}` : "";
 
-      return `<div class="bullet-list-item flex items-start space-x-3 mb-2 ${marginLeft}">
-      <div class="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-3"></div>
-      <div class="flex-1 text-gray-700 leading-relaxed">${content}</div>
+      // Different bullet styles for different levels
+      const bulletStyles = [
+        "w-3 h-3 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full",
+        "w-2.5 h-2.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full",
+        "w-2 h-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-full",
+      ];
+      const bulletStyle = bulletStyles[Math.min(level, 2)];
+
+      return `<div class="bullet-list-item flex items-start space-x-4 mb-3 ${marginLeft}">
+      <div class="flex-shrink-0 ${bulletStyle} mt-2.5 shadow-sm"></div>
+      <div class="flex-1 text-gray-700 dark:text-gray-300 leading-relaxed">
+        <div class="prose prose-sm max-w-none">${content}</div>
+      </div>
     </div>`;
     }
   );
@@ -610,7 +644,7 @@ const formatExplanation = (text) => {
   // REMOVED: Handle inline bullet points to prevent asterisk processing
   // This was converting "θ-*join" to "θ-<bullet>join"
 
-  // Step 6: Handle code blocks with proper language detection FIRST (before text formatting)
+  // Step 6: Enhanced code blocks with syntax highlighting and modern design
   // First handle code blocks with language specifiers (with or without newline)
   formatted = formatted.replace(
     /```(\w*)\n?([\s\S]*?)```/g,
@@ -618,19 +652,59 @@ const formatExplanation = (text) => {
       const language = lang || "text";
       const trimmedCode = code.trim();
 
-      return `<div class="code-block my-6 rounded-lg overflow-hidden border border-gray-300 shadow-lg">
-      <div class="bg-gray-800 text-white px-4 py-2 text-sm font-medium flex items-center justify-between">
-        <span class="text-gray-300 flex items-center">
-          <span class="text-xs font-bold mr-2">&lt;/&gt;</span>
-          ${language}
-        </span>
-        <div class="flex space-x-1">
-          <div class="w-2 h-2 bg-red-500 rounded-full"></div>
-          <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
-          <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+      // Language-specific styling
+      const languageColors = {
+        javascript: "text-yellow-400",
+        python: "text-blue-400",
+        sql: "text-purple-400",
+        css: "text-pink-400",
+        html: "text-orange-400",
+        json: "text-green-400",
+        bash: "text-gray-300",
+        text: "text-gray-300",
+      };
+
+      const textColor =
+        languageColors[language.toLowerCase()] || "text-green-400";
+
+      // Language icons
+      const languageIcons = {
+        javascript: "JS",
+        python: "PY",
+        sql: "SQL",
+        css: "CSS",
+        html: "HTML",
+        json: "JSON",
+        bash: "$",
+        text: "TXT",
+      };
+
+      const icon = languageIcons[language.toLowerCase()] || "CODE";
+
+      return `<div class="code-block my-8 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-xl">
+      <div class="bg-gradient-to-r from-gray-800 to-gray-900 text-white px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center text-xs font-bold">
+            ${icon}
+          </div>
+          <span class="text-gray-300 font-medium capitalize">${language}</span>
+        </div>
+        <div class="flex space-x-2">
+          <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+          <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+          <div class="w-3 h-3 bg-green-500 rounded-full"></div>
         </div>
       </div>
-      <pre class="bg-gray-900 text-green-400 p-4 overflow-x-auto text-sm font-mono leading-relaxed whitespace-pre-wrap"><code>${trimmedCode}</code></pre>
+      <div class="relative">
+        <pre class="bg-gray-950 ${textColor} p-6 overflow-x-auto text-sm font-mono leading-relaxed whitespace-pre-wrap border-l-4 border-indigo-500"><code>${trimmedCode}</code></pre>
+        <div class="absolute top-2 right-2">
+          <button class="text-gray-500 hover:text-gray-300 transition-colors p-1" title="Copy code">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>`;
     }
   );
@@ -643,46 +717,57 @@ const formatExplanation = (text) => {
       return match;
     }
 
-    return `<div class="code-block my-6 rounded-lg overflow-hidden border border-gray-300 shadow-lg">
-      <div class="bg-gray-800 text-white px-4 py-2 text-sm font-medium flex items-center justify-between">
-        <span class="text-gray-300 flex items-center">
-          <span class="text-xs font-bold mr-2">&lt;/&gt;</span>
-          code
-        </span>
-        <div class="flex space-x-1">
-          <div class="w-2 h-2 bg-red-500 rounded-full"></div>
-          <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
-          <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+    return `<div class="code-block my-8 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-xl">
+      <div class="bg-gradient-to-r from-gray-800 to-gray-900 text-white px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-gradient-to-r from-slate-500 to-gray-600 rounded-lg flex items-center justify-center text-xs font-bold">
+            CODE
+          </div>
+          <span class="text-gray-300 font-medium">Code Block</span>
+        </div>
+        <div class="flex space-x-2">
+          <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+          <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+          <div class="w-3 h-3 bg-green-500 rounded-full"></div>
         </div>
       </div>
-      <pre class="bg-gray-900 text-green-400 p-4 overflow-x-auto text-sm font-mono leading-relaxed whitespace-pre-wrap"><code>${trimmedCode}</code></pre>
+      <div class="relative">
+        <pre class="bg-gray-950 text-gray-300 p-6 overflow-x-auto text-sm font-mono leading-relaxed whitespace-pre-wrap border-l-4 border-gray-500"><code>${trimmedCode}</code></pre>
+        <div class="absolute top-2 right-2">
+          <button class="text-gray-500 hover:text-gray-300 transition-colors p-1" title="Copy code">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>`;
   });
 
-  // Inline code FIRST (to protect SQL syntax like SELECT * FROM)
+  // Enhanced inline code with better styling
   formatted = formatted.replace(
     /`([^`\n]+)`/g,
-    '<code class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded text-sm font-mono border border-gray-300 dark:border-gray-600">$1</code>'
+    '<code class="inline-code bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-indigo-700 dark:text-indigo-300 px-2.5 py-1 rounded-md text-sm font-mono border border-gray-300 dark:border-gray-600 shadow-sm font-medium">$1</code>'
   );
 
-  // Step 7: Handle text formatting (AFTER code blocks to avoid interfering with SQL)
+  // Step 7: Enhanced text formatting with better visual design
 
-  // Bold text (** or __) - Only process clear markdown patterns
+  // Bold text (** or __) - Clean styling with proper contrast
   formatted = formatted.replace(
     /\*\*([^*\n<>]+?)\*\*/g,
-    '<strong class="font-semibold text-gray-900">$1</strong>'
+    '<strong class="font-bold text-black dark:text-gray-100">$1</strong>'
   );
 
   formatted = formatted.replace(
     /__([^_\n<>]+?)__/g,
-    '<strong class="font-semibold text-gray-900">$1</strong>'
+    '<strong class="font-bold text-black dark:text-gray-100">$1</strong>'
   );
 
   // Italic text - ONLY underscore version to completely avoid asterisk conflicts
   // This removes all single asterisk italic processing
   formatted = formatted.replace(
     /(?<![\w])_([^_\n<>]+?)_(?![\w])/g,
-    '<em class="italic text-gray-700">$1</em>'
+    '<em class="italic text-black dark:text-gray-300">$1</em>'
   );
 
   // NO single asterisk processing at all to preserve SQL and mathematical symbols
@@ -690,13 +775,38 @@ const formatExplanation = (text) => {
   // Step 8: Handle blockquotes
   formatted = formatted.replace(
     /^>\s+(.+)$/gm,
-    '<div class="blockquote my-4 pl-4 py-2 border-l-4 border-blue-500 bg-blue-50 italic text-gray-700">$1</div>'
+    '<div class="blockquote my-4 pl-4 py-2 border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-black dark:text-gray-200 italic">$1</div>'
   );
 
   // Step 9: Handle links
   formatted = formatted.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" class="text-blue-600 hover:text-blue-800 underline font-medium" target="_blank" rel="noopener noreferrer">$1</a>'
+    '<a href="$2" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline font-medium" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+
+  // Step 10: Handle LaTeX mathematical expressions
+  // Inline math with \( ... \)
+  formatted = formatted.replace(
+    /\\?\\\(([^)]+?)\\?\\\)/g,
+    '<span class="math-inline inline-block px-1 py-0.5 bg-blue-50 dark:bg-blue-900/30 rounded text-blue-900 dark:text-blue-100 font-mono text-sm border border-blue-200 dark:border-blue-700">$1</span>'
+  );
+
+  // Math sets with \{ ... \}
+  formatted = formatted.replace(
+    /\\?\\\{([^}]+?)\\?\\\}/g,
+    '<span class="math-set inline-block px-1 py-0.5 bg-purple-50 dark:bg-purple-900/30 rounded text-purple-900 dark:text-purple-100 font-mono text-sm border border-purple-200 dark:border-purple-700">{$1}</span>'
+  );
+
+  // Display math with \[ ... \] (block math)
+  formatted = formatted.replace(
+    /\\?\\\[([^\]]+?)\\?\\\]/g,
+    '<div class="math-block my-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 text-center"><span class="font-mono text-lg text-gray-900 dark:text-gray-100">$1</span></div>'
+  );
+
+  // Handle times symbol
+  formatted = formatted.replace(
+    /\\times/g,
+    '<span class="math-operator text-red-600 dark:text-red-400 font-bold">×</span>'
   );
 
   // Step 10: Clean up any remaining formatting artifacts
@@ -736,14 +846,22 @@ const formatExplanation = (text) => {
 
       // Handle regular paragraphs
       if (section.length > 0) {
-        return `<p class="paragraph mb-4 text-gray-700 leading-relaxed text-base">${section}</p>`;
+        return `<p class="paragraph mb-4 text-gray-700 dark:text-gray-300 leading-relaxed text-base">${section}</p>`;
       }
 
       return "";
     })
     .filter((section) => section.length > 0);
 
-  return processedSections.join("\n\n");
+  // Final cleanup to remove excessive spacing and normalize HTML
+  const finalContent = processedSections
+    .join("\n\n")
+    .replace(/\n{3,}/g, "\n\n") // Remove triple or more line breaks
+    .replace(/(<\/div>)\s*(<div)/g, "$1\n$2") // Normalize div spacing
+    .replace(/(<\/h[1-6]>)\s*(<[^>]+>)/g, "$1\n$2") // Normalize header spacing
+    .trim();
+
+  return finalContent;
 };
 
 // Theme Provider Component
@@ -798,6 +916,42 @@ const ThemeProvider = ({ children }) => {
           darkMode ? "rgba(16, 185, 129, 0.25)" : "rgba(59, 130, 246, 0.15)"
         };
         color: ${darkMode ? "#f3f4f6" : "#111827"};
+      }
+
+      /* Ensure all text in explanation content has proper colors */
+      .explanation-content {
+        color: ${darkMode ? "#e5e7eb" : "#111827"} !important;
+      }
+      
+      .explanation-content p {
+        color: ${darkMode ? "#d1d5db" : "#111827"} !important;
+      }
+      
+      .explanation-content div:not(.header-main):not(.header-sub) {
+        color: ${darkMode ? "#d1d5db" : "#111827"} !important;
+      }
+      
+      .explanation-content span:not(.inline-code):not(.text-gray-300):not(.text-indigo-700):not(.text-gray-500) {
+        color: ${darkMode ? "#d1d5db" : "#111827"} !important;
+      }
+      
+      /* Ensure headers maintain their proper colors */
+      .explanation-content .header-main h2 {
+        color: ${darkMode ? "#f9fafb" : "#111827"} !important;
+      }
+      
+      .explanation-content .header-sub h3 {
+        color: ${darkMode ? "#e5e7eb" : "#1f2937"} !important;
+      }
+
+      /* Ensure bold and italic text have proper colors */
+      .explanation-content strong {
+        color: ${darkMode ? "#f9fafb" : "#000000"} !important;
+        font-weight: 700 !important;
+      }
+      
+      .explanation-content em {
+        color: ${darkMode ? "#e5e7eb" : "#000000"} !important;
       }
 
       /* Code block selection */
@@ -958,6 +1112,7 @@ function App() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [exportSuccess, setExportSuccess] = useState(false);
+  const [randomTopicNotification, setRandomTopicNotification] = useState(false);
   const [showPDFPreview, setShowPDFPreview] = useState(false);
   const [pdfContent, setPdfContent] = useState("");
   const [pdfTitle, setPdfTitle] = useState("");
@@ -968,6 +1123,7 @@ function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showStatsModal, setShowStatsModal] = useState(false);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [metadata, setMetadata] = useState({});
@@ -981,6 +1137,14 @@ function App() {
   // UI Enhancement states
   const [fontSize, setFontSize] = useState(16);
   const [readingProgress, setReadingProgress] = useState(0);
+
+  // Session statistics state
+  const [sessionStats, setSessionStats] = useState(() => {
+    const saved = localStorage.getItem("conceptai_session_stats");
+    return saved
+      ? JSON.parse(saved)
+      : { explanationsViewed: 0, minutesActive: 0 };
+  });
 
   // Enhanced PDF Export with Preview Modal
   const exportToPDF = async (content, title) => {
@@ -1707,6 +1871,71 @@ function App() {
     }, 100);
   }, [topicInputRef]);
 
+  // Session tracking useEffect
+  useEffect(() => {
+    // Track time spent on the site (update every minute)
+    const timer = setInterval(() => {
+      setSessionStats((prevStats) => {
+        const newStats = {
+          ...prevStats,
+          minutesActive: prevStats.minutesActive + 1,
+        };
+        localStorage.setItem(
+          "conceptai_session_stats",
+          JSON.stringify(newStats)
+        );
+        return newStats;
+      });
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Track explanations viewed
+  useEffect(() => {
+    if (explanation && !loading && !cached) {
+      setSessionStats((prevStats) => {
+        const newStats = {
+          ...prevStats,
+          explanationsViewed: prevStats.explanationsViewed + 1,
+        };
+        localStorage.setItem(
+          "conceptai_session_stats",
+          JSON.stringify(newStats)
+        );
+        return newStats;
+      });
+    }
+  }, [explanation, loading, cached]);
+
+  // ESC key handler for closing modals
+  useEffect(() => {
+    const handleEscKey = (event) => {
+      if (event.key === "Escape") {
+        if (showStatsModal) {
+          setShowStatsModal(false);
+        } else if (showHistory) {
+          setShowHistory(false);
+        } else if (showAnalytics) {
+          setShowAnalytics(false);
+        } else if (showShortcuts) {
+          setShowShortcuts(false);
+        } else if (showPDFPreview) {
+          setShowPDFPreview(false);
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleEscKey);
+    return () => document.removeEventListener("keydown", handleEscKey);
+  }, [
+    showStatsModal,
+    showHistory,
+    showAnalytics,
+    showShortcuts,
+    showPDFPreview,
+  ]);
+
   // Enhanced regeneration function with confirmation dialog
   const handleRegenerate = () => {
     const shouldRegenerate = window.confirm(
@@ -1976,14 +2205,29 @@ function App() {
   // Clear all history
   const clearHistory = () => {
     const shouldClear = window.confirm(
-      "🗑️ Clear Search History\n\n" +
-        "This will permanently delete your local search history. This action cannot be undone.\n\n" +
+      "🗑️ Clear All History & Data\n\n" +
+        "This will permanently delete:\n" +
+        "• All search history\n" +
+        "• All explanation history\n" +
+        "• All analytics data\n" +
+        "• Session statistics\n\n" +
+        "Your theme preferences will be preserved.\n" +
+        "This action cannot be undone.\n\n" +
         "Continue?"
     );
 
     if (shouldClear) {
+      // Clear all state
       setLocalHistory([]);
-      localStorage.removeItem(HISTORY_KEY);
+      setSessionStats({ minutesActive: 0, explanationsViewed: 0 });
+      setAnalyticsData(null);
+
+      // Clear all relevant localStorage data
+      localStorage.removeItem(HISTORY_KEY); // "conceptai_search_history"
+      localStorage.removeItem("explanationHistory");
+      localStorage.removeItem("conceptai_session_stats");
+
+      // Note: We preserve "darkMode" and "conceptai_user_session"
     }
   };
 
@@ -2138,7 +2382,7 @@ function App() {
           darkMode
             ? "bg-gray-900/80 border-gray-800/20"
             : "bg-white/80 border-white/20"
-        }`}
+        } shadow-sm`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
@@ -2147,9 +2391,53 @@ function App() {
                 <Brain className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  ConceptAI
-                </h1>
+                <div className="flex items-center space-x-2">
+                  <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                    ConceptAI
+                  </h1>
+
+                  {/* Breadcrumb - only show when explanation exists */}
+                  {explanation && topic && (
+                    <div
+                      className={`hidden sm:flex items-center ml-2 text-sm ${
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      <ChevronRight className="w-3.5 h-3.5 mx-1 opacity-50" />
+                      <span className="font-medium truncate max-w-[120px]">
+                        {topic}
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5 mx-1 opacity-50" />
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded font-medium ${
+                          level === "eli5"
+                            ? darkMode
+                              ? "bg-pink-900/30 text-pink-300"
+                              : "bg-pink-100 text-pink-800"
+                            : level === "student"
+                            ? darkMode
+                              ? "bg-blue-900/30 text-blue-300"
+                              : "bg-blue-100 text-blue-800"
+                            : level === "graduate"
+                            ? darkMode
+                              ? "bg-purple-900/30 text-purple-300"
+                              : "bg-purple-100 text-purple-800"
+                            : darkMode
+                            ? "bg-emerald-900/30 text-emerald-300"
+                            : "bg-emerald-100 text-emerald-800"
+                        }`}
+                      >
+                        {level === "eli5"
+                          ? "ELI5"
+                          : level === "student"
+                          ? "Student"
+                          : level === "graduate"
+                          ? "Graduate"
+                          : "Advanced"}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <p
                   className={`text-xs hidden sm:block ${
                     darkMode ? "text-gray-400" : "text-gray-500"
@@ -2160,11 +2448,12 @@ function App() {
               </div>
             </div>
             <div className="flex items-center space-x-1 sm:space-x-3">
-              {/* Only show essential buttons on mobile, more on desktop */}
+              {/* Model Status Indicator */}
               <div
                 className={`hidden sm:flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1 rounded-full ${
                   darkMode ? "bg-green-900/50" : "bg-green-100"
                 }`}
+                title="AI Model Status"
               >
                 <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span
@@ -2176,60 +2465,99 @@ function App() {
                 </span>
               </div>
 
-              {/* Essential buttons - always visible */}
-              <button
-                onClick={openAnalytics}
-                className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 group ${
-                  darkMode
-                    ? "text-gray-400 hover:text-indigo-400 hover:bg-gray-800"
-                    : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
-                }`}
-                title="Usage Analytics"
-              >
-                <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
-              </button>
+              {/* Session Stats - shown only on larger screens */}
+              {/* {sessionStats.explanationsViewed > 0 && (
+                <div
+                  className={`hidden lg:flex items-center space-x-3 px-3 py-1 rounded-lg ${
+                    darkMode
+                      ? "bg-gray-800/40 text-gray-300"
+                      : "bg-gray-100 text-gray-700"
+                  }`}
+                >
+                  <div className="flex items-center space-x-1">
+                    <BookOpen className="w-3.5 h-3.5 opacity-70" />
+                    <span className="text-xs">
+                      <span className="font-semibold">
+                        {sessionStats.explanationsViewed}
+                      </span>{" "}
+                      learned
+                    </span>
+                  </div>
+                  {sessionStats.minutesActive > 0 && (
+                    <div className="flex items-center space-x-1">
+                      <Clock className="w-3.5 h-3.5 opacity-70" />
+                      <span className="text-xs">
+                        <span className="font-semibold">
+                          {sessionStats.minutesActive}
+                        </span>{" "}
+                        min
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )} */}
 
-              <button
-                onClick={toggleDarkMode}
-                className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 group ${
-                  darkMode
-                    ? "text-gray-400 hover:text-yellow-400 hover:bg-gray-800"
-                    : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
+              {/* Action Button Group */}
+              <div
+                className={`flex items-center rounded-lg p-1 ${
+                  darkMode ? "bg-gray-800/50" : "bg-gray-100/70"
                 }`}
-                title="Toggle Dark Mode (Ctrl+D)"
               >
-                {darkMode ? (
-                  <Sun className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
-                ) : (
-                  <Moon className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
-                )}
-              </button>
-
-              {/* Secondary buttons - hidden on mobile */}
-              <div className="hidden sm:flex items-center space-x-2">
+                {/* Essential buttons - always visible */}
                 <button
-                  onClick={() => setShowHistory(true)}
-                  className={`p-2 rounded-lg transition-all duration-200 group ${
+                  onClick={openAnalytics}
+                  className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 group ${
                     darkMode
                       ? "text-gray-400 hover:text-indigo-400 hover:bg-gray-800"
                       : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
                   }`}
-                  title="Search History"
+                  data-tooltip="Analytics"
                 >
-                  <History className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <BarChart3 className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
                 </button>
 
                 <button
-                  onClick={() => setShowShortcuts(true)}
-                  className={`p-2 rounded-lg transition-all duration-200 group ${
+                  onClick={toggleDarkMode}
+                  className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 group ${
                     darkMode
-                      ? "text-gray-400 hover:text-indigo-400 hover:bg-gray-800"
+                      ? "text-gray-400 hover:text-yellow-400 hover:bg-gray-800"
                       : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
                   }`}
-                  title="Keyboard Shortcuts (Ctrl+K)"
+                  data-tooltip="Theme (Ctrl+D)"
                 >
-                  <Keyboard className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  {darkMode ? (
+                    <Sun className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
+                  ) : (
+                    <Moon className="w-4 h-4 sm:w-5 sm:h-5 group-hover:scale-110 transition-transform" />
+                  )}
                 </button>
+
+                {/* Secondary buttons - hidden on mobile */}
+                <div className="hidden sm:flex items-center">
+                  <button
+                    onClick={() => setShowHistory(true)}
+                    className={`p-2 rounded-lg transition-all duration-200 group ${
+                      darkMode
+                        ? "text-gray-400 hover:text-indigo-400 hover:bg-gray-800"
+                        : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
+                    }`}
+                    data-tooltip="History"
+                  >
+                    <History className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  </button>
+
+                  <button
+                    onClick={() => setShowShortcuts(true)}
+                    className={`p-2 rounded-lg transition-all duration-200 group ${
+                      darkMode
+                        ? "text-gray-400 hover:text-indigo-400 hover:bg-gray-800"
+                        : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
+                    }`}
+                    data-tooltip="Shortcuts (Ctrl+K)"
+                  >
+                    <Keyboard className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -2255,7 +2583,7 @@ function App() {
             <div className="space-y-1.5 lg:space-y-2">
               <label
                 className={`block text-sm font-semibold ${
-                  darkMode ? "text-gray-200" : "text-gray-700"
+                  darkMode ? "text-gray-200" : "text-gray-900"
                 }`}
               >
                 What would you like to learn?
@@ -2497,7 +2825,7 @@ function App() {
                 <div className="flex items-center justify-between">
                   <div
                     className={`text-sm font-semibold ${
-                      darkMode ? "text-gray-200" : "text-gray-700"
+                      darkMode ? "text-gray-200" : "text-gray-900"
                     }`}
                   >
                     Level:{" "}
@@ -2556,7 +2884,7 @@ function App() {
                 <div className="flex items-center justify-between">
                   <label
                     className={`block text-sm font-semibold ${
-                      darkMode ? "text-gray-200" : "text-gray-700"
+                      darkMode ? "text-gray-200" : "text-gray-900"
                     }`}
                   >
                     Choose explanation level
@@ -2909,97 +3237,136 @@ function App() {
               </div>
             )}
 
-            {/* Enhanced Stats - Hidden on small screens to save space */}
+            {/* Enhanced Feature Cards - Responsive for all screen sizes */}
             <div
-              className={`hidden sm:block pt-4 border-t ${
+              className={`pt-4 border-t ${
                 darkMode ? "border-gray-600/50" : "border-gray-200"
               }`}
             >
-              <div className="grid grid-cols-2 gap-3 text-center">
-                <div
-                  className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-lg hover:scale-105 overflow-hidden ${
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                {/* Quick Topics Card */}
+                <button
+                  onClick={() => {
+                    const quickTopics = [
+                      "Artificial Intelligence",
+                      "Machine Learning",
+                      "Quantum Computing",
+                      "Blockchain Technology",
+                      "Climate Change",
+                      "Space Exploration",
+                      "Gene Editing",
+                      "Renewable Energy",
+                      "Neural Networks",
+                      "Cryptocurrency",
+                      "Virtual Reality",
+                      "Nanotechnology",
+                      "Biotechnology",
+                      "Solar Energy",
+                      "3D Printing",
+                      "Robotics",
+                    ];
+                    const levels = ["eli5", "student", "graduate", "advanced"];
+
+                    const randomTopic =
+                      quickTopics[
+                        Math.floor(Math.random() * quickTopics.length)
+                      ];
+                    const randomLevel =
+                      levels[Math.floor(Math.random() * levels.length)];
+
+                    setTopic(randomTopic);
+                    setLevel(randomLevel);
+
+                    // Show notification
+                    setRandomTopicNotification(true);
+                    setTimeout(() => setRandomTopicNotification(false), 5000);
+                  }}
+                  className={`group relative p-2 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 hover:shadow-lg hover:scale-105 overflow-hidden text-left ${
                     darkMode
-                      ? "bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border-blue-800/50 hover:border-blue-600/50"
-                      : "bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200/50 hover:border-blue-300/50"
+                      ? "bg-gradient-to-br from-purple-900/40 to-violet-900/40 border-purple-800/50 hover:border-purple-600/50"
+                      : "bg-gradient-to-br from-purple-50 to-violet-100 border-purple-200/50 hover:border-purple-300/50"
                   }`}
                 >
                   <div className="relative z-10">
                     <div
-                      className={`inline-flex items-center justify-center w-8 h-8 rounded-full mb-2 ${
-                        darkMode ? "bg-blue-500/20" : "bg-blue-500/10"
+                      className={`inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full mb-1 sm:mb-2 ${
+                        darkMode ? "bg-purple-500/20" : "bg-purple-500/10"
                       }`}
                     >
-                      <Zap
-                        className={`w-4 h-4 ${
-                          darkMode ? "text-blue-400" : "text-blue-600"
+                      <Lightbulb
+                        className={`w-3 h-3 sm:w-4 sm:h-4 ${
+                          darkMode ? "text-purple-400" : "text-purple-600"
                         }`}
                       />
                     </div>
                     <div
-                      className={`text-lg font-bold ${
-                        darkMode ? "text-blue-400" : "text-blue-600"
+                      className={`text-xs sm:text-sm font-bold ${
+                        darkMode ? "text-purple-400" : "text-purple-600"
                       }`}
                     >
-                      Fast
+                      Random Topic
                     </div>
                     <div
-                      className={`text-xs ${
+                      className={`text-[10px] sm:text-xs ${
                         darkMode ? "text-gray-400" : "text-gray-500"
                       }`}
                     >
-                      Instant Results
+                      Topic & level
                     </div>
                   </div>
                   <div
                     className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
                       darkMode
-                        ? "bg-gradient-to-r from-blue-500/10 to-indigo-500/10"
-                        : "bg-gradient-to-r from-blue-100/50 to-indigo-200/50"
+                        ? "bg-gradient-to-r from-purple-500/10 to-violet-500/10"
+                        : "bg-gradient-to-r from-purple-100/50 to-violet-200/50"
                     }`}
                   ></div>
-                </div>
-                <div
-                  className={`group relative p-4 rounded-xl border transition-all duration-300 hover:shadow-lg hover:scale-105 overflow-hidden ${
+                </button>
+
+                {/* Learning Stats Card */}
+                <button
+                  onClick={() => setShowStatsModal(true)}
+                  className={`group relative p-2 sm:p-4 rounded-lg sm:rounded-xl border transition-all duration-300 hover:shadow-lg hover:scale-105 overflow-hidden text-left ${
                     darkMode
-                      ? "bg-gradient-to-br from-green-900/40 to-emerald-900/40 border-green-800/50 hover:border-green-600/50"
-                      : "bg-gradient-to-br from-green-50 to-emerald-100 border-green-200/50 hover:border-green-300/50"
+                      ? "bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border-emerald-800/50 hover:border-emerald-600/50"
+                      : "bg-gradient-to-br from-emerald-50 to-teal-100 border-emerald-200/50 hover:border-emerald-300/50"
                   }`}
                 >
                   <div className="relative z-10">
                     <div
-                      className={`inline-flex items-center justify-center w-8 h-8 rounded-full mb-2 ${
-                        darkMode ? "bg-green-500/20" : "bg-green-500/10"
+                      className={`inline-flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full mb-1 sm:mb-2 ${
+                        darkMode ? "bg-emerald-500/20" : "bg-emerald-500/10"
                       }`}
                     >
-                      <Brain
-                        className={`w-4 h-4 ${
-                          darkMode ? "text-green-400" : "text-green-600"
+                      <TrendingUp
+                        className={`w-3 h-3 sm:w-4 sm:h-4 ${
+                          darkMode ? "text-emerald-400" : "text-emerald-600"
                         }`}
                       />
                     </div>
                     <div
-                      className={`text-lg font-bold ${
-                        darkMode ? "text-green-400" : "text-green-600"
+                      className={`text-xs sm:text-sm font-bold ${
+                        darkMode ? "text-emerald-400" : "text-emerald-600"
                       }`}
                     >
-                      Smart
+                      Progress
                     </div>
                     <div
-                      className={`text-xs ${
+                      className={`text-[10px] sm:text-xs ${
                         darkMode ? "text-gray-400" : "text-gray-500"
                       }`}
                     >
-                      AI Powered
+                      {localHistory.length} topics
                     </div>
                   </div>
                   <div
                     className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
                       darkMode
-                        ? "bg-gradient-to-r from-green-500/10 to-emerald-500/10"
-                        : "bg-gradient-to-r from-green-100/50 to-emerald-200/50"
+                        ? "bg-gradient-to-r from-emerald-500/10 to-teal-500/10"
+                        : "bg-gradient-to-r from-emerald-100/50 to-teal-200/50"
                     }`}
                   ></div>
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -3635,18 +4002,23 @@ function App() {
                   >
                     {/* Custom formatted explanation with enhanced styling and font controls */}
                     <div
-                      className={`explanation-content max-w-none leading-relaxed ${
+                      className={`explanation-content max-w-none leading-relaxed font-medium ${
                         darkMode
-                          ? "prose-invert prose-headings:text-gray-100 prose-p:text-gray-200"
-                          : "prose-gray prose-headings:text-gray-900 prose-p:text-gray-800"
+                          ? "text-gray-200 prose-invert prose-headings:text-gray-100 prose-p:text-gray-200"
+                          : "text-gray-900 prose-gray prose-headings:text-black prose-p:text-gray-900"
                       }`}
                       style={{
-                        // Custom CSS variables for dynamic theming and font sizing
-                        "--code-bg": darkMode ? "#1f2937" : "#f9fafb",
+                        // Enhanced CSS variables for modern typography and theming
+                        "--code-bg": darkMode ? "#0f172a" : "#f8fafc",
                         "--code-text": darkMode ? "#10b981" : "#059669",
                         "--code-border": darkMode ? "#374151" : "#d1d5db",
+                        "--header-gradient": darkMode
+                          ? "linear-gradient(135deg, #6366f1, #8b5cf6)"
+                          : "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                        "--accent-color": darkMode ? "#6366f1" : "#4f46e5",
                         fontSize: `${fontSize}px`,
-                        lineHeight: fontSize < 18 ? "1.6" : "1.7",
+                        lineHeight: fontSize < 18 ? "1.7" : "1.8",
+                        letterSpacing: "0.01em",
                       }}
                       dangerouslySetInnerHTML={{
                         __html: formatExplanation(explanation),
@@ -3694,83 +4066,80 @@ function App() {
             onClick={() => setShowHistory(false)}
           ></div>
           <div
-            className={`w-full sm:max-w-md shadow-2xl overflow-hidden animate-slide-in-right ${
+            className={`w-full sm:max-w-md shadow-2xl overflow-hidden ${
               darkMode
-                ? "bg-gray-900/95 backdrop-blur-xl border-l border-gray-700/50"
-                : "bg-white"
+                ? "bg-gray-900 border-l border-gray-700"
+                : "bg-white border-l border-gray-200"
             }`}
           >
+            {/* Header */}
             <div
-              className={`p-4 sm:p-6 border-b ${
+              className={`p-6 border-b ${
                 darkMode
-                  ? "border-gray-700/50 bg-gradient-to-r from-gray-800/80 to-gray-800/60"
-                  : "border-gray-200 bg-gradient-to-r from-indigo-50 to-blue-50"
+                  ? "border-gray-700 bg-gray-800"
+                  : "border-gray-200 bg-gray-50"
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3 min-w-0">
+                <div className="flex items-center space-x-3">
                   <div
-                    className={`p-2 rounded-lg flex-shrink-0 ${
-                      darkMode ? "bg-indigo-900/50" : "bg-indigo-100"
+                    className={`p-2 rounded-lg ${
+                      darkMode ? "bg-indigo-500/20" : "bg-indigo-100"
                     }`}
                   >
                     <History
-                      className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                      className={`w-5 h-5 ${
                         darkMode ? "text-indigo-400" : "text-indigo-600"
                       }`}
                     />
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div>
                     <h2
-                      className={`text-lg sm:text-xl font-bold ${
-                        darkMode ? "text-gray-100" : "text-gray-900"
+                      className={`text-xl font-bold ${
+                        darkMode ? "text-white" : "text-gray-900"
                       }`}
                     >
                       Search History
                     </h2>
                     <p
-                      className={`text-xs sm:text-sm ${
+                      className={`text-sm ${
                         darkMode ? "text-gray-400" : "text-gray-600"
                       }`}
                     >
-                      Your recent searches
+                      {localHistory.length} recent searches
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowHistory(false)}
-                  className={`p-2 rounded-lg transition-colors group flex-shrink-0 ${
-                    darkMode ? "hover:bg-gray-700/60" : "hover:bg-white/60"
+                  className={`p-2 rounded-lg transition-colors ${
+                    darkMode
+                      ? "hover:bg-gray-700 text-gray-400 hover:text-white"
+                      : "hover:bg-gray-200 text-gray-500 hover:text-gray-900"
                   }`}
-                  title="Close"
                 >
-                  <X
-                    className={`w-5 h-5 ${
-                      darkMode
-                        ? "text-gray-400 group-hover:text-gray-200"
-                        : "text-gray-500 group-hover:text-gray-700"
-                    }`}
-                  />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto max-h-96">
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto max-h-[calc(100vh-200px)]">
               {localHistory.length === 0 ? (
                 <div className="p-8 text-center">
                   <div
-                    className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+                    className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${
                       darkMode ? "bg-gray-800" : "bg-gray-100"
                     }`}
                   >
                     <History
-                      className={`w-8 h-8 ${
+                      className={`w-10 h-10 ${
                         darkMode ? "text-gray-500" : "text-gray-400"
                       }`}
                     />
                   </div>
                   <h3
-                    className={`font-semibold mb-2 ${
+                    className={`text-lg font-semibold mb-2 ${
                       darkMode ? "text-gray-200" : "text-gray-700"
                     }`}
                   >
@@ -3781,62 +4150,90 @@ function App() {
                       darkMode ? "text-gray-400" : "text-gray-500"
                     }`}
                   >
-                    Start exploring concepts to build your history
+                    Start exploring concepts to build your learning journey
                   </p>
                 </div>
               ) : (
-                <div className="p-4 space-y-2">
+                <div className="p-4 space-y-3">
                   {localHistory.map((item, index) => (
                     <button
                       key={item.id}
                       onClick={() => loadFromHistory(item)}
-                      className={`w-full text-left p-4 rounded-xl transition-all duration-200 group hover:shadow-sm border ${
+                      className={`w-full text-left p-4 rounded-xl transition-all duration-200 group border ${
                         darkMode
-                          ? "bg-gray-800/60 hover:bg-gray-700/80 border-gray-700/50 hover:border-indigo-500/30"
-                          : "bg-gray-50 hover:bg-indigo-50 border-transparent hover:border-indigo-100"
+                          ? "bg-gray-800 hover:bg-gray-700 border-gray-700 hover:border-indigo-500/50"
+                          : "bg-gray-50 hover:bg-white border-gray-200 hover:border-indigo-300 hover:shadow-md"
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1 flex items-center space-x-3">
-                          <div
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                              darkMode ? "bg-indigo-900/50" : "bg-indigo-100"
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            darkMode ? "bg-indigo-500/20" : "bg-indigo-100"
+                          }`}
+                        >
+                          <span
+                            className={`text-sm font-bold ${
+                              darkMode ? "text-indigo-400" : "text-indigo-600"
                             }`}
                           >
-                            <span
-                              className={`text-xs font-bold ${
-                                darkMode ? "text-indigo-400" : "text-indigo-600"
-                              }`}
-                            >
-                              #{index + 1}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0">
+                            {String(index + 1).padStart(2, "0")}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
                             <p
-                              className={`font-medium capitalize truncate transition-colors ${
+                              className={`font-semibold capitalize truncate ${
                                 darkMode
-                                  ? "text-gray-200 group-hover:text-indigo-400"
+                                  ? "text-white group-hover:text-indigo-400"
                                   : "text-gray-900 group-hover:text-indigo-600"
                               }`}
                             >
                               {item.topic}
                             </p>
-                            <p
-                              className={`text-sm capitalize ${
+                            <ChevronRight
+                              className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${
+                                darkMode ? "text-indigo-400" : "text-indigo-500"
+                              }`}
+                            />
+                          </div>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span
+                              className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
+                                item.level === "eli5"
+                                  ? darkMode
+                                    ? "bg-pink-500/20 text-pink-400"
+                                    : "bg-pink-100 text-pink-700"
+                                  : item.level === "student"
+                                  ? darkMode
+                                    ? "bg-blue-500/20 text-blue-400"
+                                    : "bg-blue-100 text-blue-700"
+                                  : item.level === "graduate"
+                                  ? darkMode
+                                    ? "bg-purple-500/20 text-purple-400"
+                                    : "bg-purple-100 text-purple-700"
+                                  : darkMode
+                                  ? "bg-emerald-500/20 text-emerald-400"
+                                  : "bg-emerald-100 text-emerald-700"
+                              }`}
+                            >
+                              {DIFFICULTY_LEVELS.find(
+                                (l) => l.value === item.level
+                              )?.label || item.level}
+                            </span>
+                            <span
+                              className={`text-xs ${
                                 darkMode ? "text-gray-400" : "text-gray-500"
                               }`}
                             >
-                              {item.level} level •{" "}
-                              {new Date(item.timestamp).toLocaleDateString()}
-                            </p>
+                              {new Date(item.timestamp).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                }
+                              )}
+                            </span>
                           </div>
-                        </div>
-                        <div
-                          className={`opacity-0 group-hover:opacity-100 transition-opacity ${
-                            darkMode ? "text-indigo-400" : "text-indigo-400"
-                          }`}
-                        >
-                          <Sparkles className="w-4 h-4" />
                         </div>
                       </div>
                     </button>
@@ -3845,26 +4242,25 @@ function App() {
               )}
             </div>
 
+            {/* Footer */}
             {localHistory.length > 0 && (
               <div
                 className={`p-4 border-t ${
                   darkMode
-                    ? "border-gray-700/50 bg-gray-800/40"
+                    ? "border-gray-700 bg-gray-800"
                     : "border-gray-200 bg-gray-50"
                 }`}
               >
                 <button
                   onClick={clearHistory}
-                  className={`w-full px-4 py-2 rounded-lg transition-colors text-sm font-medium border ${
+                  className={`w-full px-4 py-3 rounded-lg transition-colors text-sm font-medium flex items-center justify-center space-x-2 ${
                     darkMode
-                      ? "bg-red-900/30 text-red-400 hover:bg-red-900/50 border-red-800/50 hover:border-red-700/50"
-                      : "bg-red-50 text-red-600 hover:bg-red-100 border-red-200 hover:border-red-300"
+                      ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30"
+                      : "bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
                   }`}
                 >
-                  <div className="flex items-center justify-center space-x-2">
-                    <X className="w-4 h-4" />
-                    <span>Clear History</span>
-                  </div>
+                  <X className="w-4 h-4" />
+                  <span>Clear All History</span>
                 </button>
               </div>
             )}
@@ -5494,6 +5890,366 @@ function App() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📊 STATS MODAL */}
+      {showStatsModal && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowStatsModal(false);
+            }
+          }}
+        >
+          <div
+            className={`w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl transition-all duration-300 transform ${
+              darkMode
+                ? "bg-gray-800 border border-gray-700"
+                : "bg-white border border-gray-200"
+            }`}
+          >
+            {/* Modal Header */}
+            <div
+              className={`px-6 py-4 border-b flex items-center justify-between sticky top-0 ${
+                darkMode
+                  ? "border-gray-700 bg-gray-800"
+                  : "border-gray-200 bg-white"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`p-2 rounded-lg ${
+                    darkMode ? "bg-emerald-500/20" : "bg-emerald-100"
+                  }`}
+                >
+                  <TrendingUp
+                    className={`w-5 h-5 ${
+                      darkMode ? "text-emerald-400" : "text-emerald-600"
+                    }`}
+                  />
+                </div>
+                <div>
+                  <h3
+                    className={`text-lg font-bold ${
+                      darkMode ? "text-white" : "text-gray-900"
+                    }`}
+                  >
+                    Learning Progress
+                  </h3>
+                  <p
+                    className={`text-sm ${
+                      darkMode ? "text-gray-400" : "text-gray-600"
+                    }`}
+                  >
+                    Your ConceptAI journey
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowStatsModal(false)}
+                className={`p-2 rounded-lg transition-colors duration-200 ${
+                  darkMode
+                    ? "hover:bg-gray-700 text-gray-400 hover:text-white"
+                    : "hover:bg-gray-100 text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6">
+              {/* Total Topics */}
+              <div className="text-center">
+                <div
+                  className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-3 ${
+                    darkMode ? "bg-indigo-500/20" : "bg-indigo-100"
+                  }`}
+                >
+                  <div
+                    className={`text-2xl font-bold ${
+                      darkMode ? "text-indigo-400" : "text-indigo-600"
+                    }`}
+                  >
+                    {localHistory.length}
+                  </div>
+                </div>
+                <p
+                  className={`text-lg font-semibold ${
+                    darkMode ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  Topics Explored
+                </p>
+              </div>
+
+              {/* Level Breakdown */}
+              <div>
+                <h4
+                  className={`text-sm font-semibold mb-3 ${
+                    darkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  By Level
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* ELI5 Level */}
+                  <div
+                    className={`p-3 rounded-lg border text-center ${
+                      darkMode
+                        ? "bg-pink-500/10 border-pink-500/20"
+                        : "bg-pink-50 border-pink-200"
+                    }`}
+                  >
+                    <div
+                      className={`text-xl font-bold ${
+                        darkMode ? "text-pink-400" : "text-pink-600"
+                      }`}
+                    >
+                      {localHistory.filter((h) => h.level === "eli5").length}
+                    </div>
+                    <div
+                      className={`text-xs ${
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      ELI5
+                    </div>
+                  </div>
+
+                  {/* Student Level */}
+                  <div
+                    className={`p-3 rounded-lg border text-center ${
+                      darkMode
+                        ? "bg-blue-500/10 border-blue-500/20"
+                        : "bg-blue-50 border-blue-200"
+                    }`}
+                  >
+                    <div
+                      className={`text-xl font-bold ${
+                        darkMode ? "text-blue-400" : "text-blue-600"
+                      }`}
+                    >
+                      {localHistory.filter((h) => h.level === "student").length}
+                    </div>
+                    <div
+                      className={`text-xs ${
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      Student
+                    </div>
+                  </div>
+
+                  {/* Graduate Level */}
+                  <div
+                    className={`p-3 rounded-lg border text-center ${
+                      darkMode
+                        ? "bg-purple-500/10 border-purple-500/20"
+                        : "bg-purple-50 border-purple-200"
+                    }`}
+                  >
+                    <div
+                      className={`text-xl font-bold ${
+                        darkMode ? "text-purple-400" : "text-purple-600"
+                      }`}
+                    >
+                      {
+                        localHistory.filter((h) => h.level === "graduate")
+                          .length
+                      }
+                    </div>
+                    <div
+                      className={`text-xs ${
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      Graduate
+                    </div>
+                  </div>
+
+                  {/* Advanced Level */}
+                  <div
+                    className={`p-3 rounded-lg border text-center ${
+                      darkMode
+                        ? "bg-emerald-500/10 border-emerald-500/20"
+                        : "bg-emerald-50 border-emerald-200"
+                    }`}
+                  >
+                    <div
+                      className={`text-xl font-bold ${
+                        darkMode ? "text-emerald-400" : "text-emerald-600"
+                      }`}
+                    >
+                      {
+                        localHistory.filter((h) => h.level === "advanced")
+                          .length
+                      }
+                    </div>
+                    <div
+                      className={`text-xs ${
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      Advanced
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Topics */}
+              {localHistory.length > 0 && (
+                <div>
+                  <h4
+                    className={`text-sm font-semibold mb-3 ${
+                      darkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    Recent Topics
+                  </h4>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {localHistory.slice(0, 3).map((item, index) => (
+                      <div
+                        key={index}
+                        className={`p-3 rounded-lg border flex items-center justify-between ${
+                          darkMode
+                            ? "bg-gray-700/50 border-gray-600"
+                            : "bg-gray-50 border-gray-200"
+                        }`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-sm font-medium truncate ${
+                              darkMode ? "text-white" : "text-gray-900"
+                            }`}
+                          >
+                            {item.topic}
+                          </p>
+                          <p
+                            className={`text-xs ${
+                              darkMode ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
+                            {DIFFICULTY_LEVELS.find(
+                              (l) => l.value === item.level
+                            )?.label || item.level}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setTopic(item.topic);
+                            setLevel(item.level);
+                            setShowStatsModal(false);
+                          }}
+                          className={`ml-3 p-1 rounded-lg transition-colors duration-200 ${
+                            darkMode
+                              ? "hover:bg-gray-600 text-gray-400 hover:text-white"
+                              : "hover:bg-gray-200 text-gray-500 hover:text-gray-900"
+                          }`}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Motivational Message */}
+              <div
+                className={`p-4 rounded-xl border ${
+                  darkMode
+                    ? "bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-indigo-500/20"
+                    : "bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Trophy
+                    className={`w-5 h-5 ${
+                      darkMode ? "text-yellow-400" : "text-yellow-600"
+                    }`}
+                  />
+                  <div>
+                    <p
+                      className={`text-sm font-semibold ${
+                        darkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
+                      {localHistory.length === 0
+                        ? "Welcome to ConceptAI!"
+                        : localHistory.length < 5
+                        ? "Great start! Keep exploring!"
+                        : localHistory.length < 20
+                        ? "You're building momentum!"
+                        : "Amazing learning journey!"}
+                    </p>
+                    <p
+                      className={`text-xs ${
+                        darkMode ? "text-gray-400" : "text-gray-600"
+                      }`}
+                    >
+                      {localHistory.length === 0
+                        ? "Start exploring concepts to track your progress"
+                        : `You've explored ${localHistory.length} topics. Keep up the curiosity!`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Random Topic Notification */}
+      {randomTopicNotification && (
+        <div className="fixed top-4 right-4 z-50 transform transition-all duration-300 ease-out">
+          <div
+            className={`flex items-center space-x-3 px-4 py-3 rounded-lg shadow-lg border ${
+              darkMode
+                ? "bg-gray-800 border-gray-700 text-white"
+                : "bg-white border-gray-200 text-gray-900"
+            }`}
+          >
+            <div
+              className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                darkMode ? "bg-purple-500/20" : "bg-purple-100"
+              }`}
+            >
+              <Lightbulb
+                className={`w-4 h-4 ${
+                  darkMode ? "text-purple-400" : "text-purple-600"
+                }`}
+              />
+            </div>
+            <div className="flex-1">
+              <p
+                className={`text-sm font-semibold ${
+                  darkMode ? "text-white" : "text-gray-900"
+                }`}
+              >
+                Random topic & level selected!
+              </p>
+              <p
+                className={`text-xs ${
+                  darkMode ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Press "Generate Explanation" to explore
+              </p>
+            </div>
+            <button
+              onClick={() => setRandomTopicNotification(false)}
+              className={`p-1 rounded-full transition-colors ${
+                darkMode
+                  ? "hover:bg-gray-700 text-gray-400 hover:text-white"
+                  : "hover:bg-gray-100 text-gray-500 hover:text-gray-900"
+              }`}
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
