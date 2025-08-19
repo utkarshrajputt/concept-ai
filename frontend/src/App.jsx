@@ -2476,7 +2476,7 @@ function App() {
                     darkMode ? "text-green-400" : "text-green-700"
                   }`}
                 >
-                  DeepSeek-R1 • Online
+                   Online
                 </span>
               </div>
 

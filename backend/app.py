@@ -16,19 +16,37 @@ CORS(app)  # Enable CORS for all routes
 # Configuration
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+# Google AI Studio Configuration
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+GOOGLE_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+
 DATABASE_PATH = 'explanations.db'
 
-# Debug: Check if API key is loaded
-api_key_status = 'Yes' if OPENROUTER_API_KEY else 'No'
-print(f"OPENROUTER_API_KEY loaded: {api_key_status}")
+# Debug: Check if API keys are loaded
+print("=== API CONFIGURATION ===")
+openrouter_status = 'Yes' if OPENROUTER_API_KEY else 'No'
+google_status = 'Yes' if GOOGLE_API_KEY else 'No'
+
+print(f"OPENROUTER_API_KEY loaded: {openrouter_status}")
 if OPENROUTER_API_KEY:
-    print(f"API Key starts with: {OPENROUTER_API_KEY[:10]}...")
-else:
-    print("ERROR: No API key found in environment variables")
+    print(f"OpenRouter API Key starts with: {OPENROUTER_API_KEY[:10]}...")
+
+print(f"GOOGLE_API_KEY loaded: {google_status}")
+if GOOGLE_API_KEY:
+    print(f"Google API Key starts with: {GOOGLE_API_KEY[:10]}...")
+
+if not GOOGLE_API_KEY and not OPENROUTER_API_KEY:
+    print("ERROR: No API keys found in environment variables")
     print("Available environment variables:")
     for key in os.environ.keys():
-        if 'OPENROUTER' in key or 'API' in key:
+        if 'API' in key:
             print(f"  {key}: {'SET' if os.environ[key] else 'EMPTY'}")
+
+# Determine which API to use
+USE_GOOGLE_API = bool(GOOGLE_API_KEY)
+print(f"Using API: {'Google AI Studio' if USE_GOOGLE_API else 'OpenRouter'}")
+print("=" * 30)
 
 @app.errorhandler(500)
 def handle_500_error(e):
@@ -158,7 +176,85 @@ def save_explanation(topic, level, explanation):
         conn.close()
 
 def get_ai_explanation(topic, level):
-    """Get explanation from OpenRouter DeepSeek API"""
+    """Get explanation from Google AI Studio or OpenRouter API"""
+    
+    if USE_GOOGLE_API and GOOGLE_API_KEY:
+        return get_google_ai_explanation(topic, level)
+    elif OPENROUTER_API_KEY:
+        return get_openrouter_explanation(topic, level)
+    else:
+        return None, "No API key configured"
+
+def get_google_ai_explanation(topic, level):
+    """Get explanation from Google AI Studio Gemini API"""
+    
+    # Create system prompt based on difficulty level with formatting instructions
+    level_prompts = {
+        "eli5": "Explain this concept as if I'm 5 years old. Use simple words, fun analogies, and make it engaging. Structure your response with clear headers using ### for main sections and #### for subsections. Use numbered lists (1. 2. 3.) for step-by-step explanations and bullet points (-) for key features. Make it fun and easy to understand!",
+        "student": "Explain this concept at a high school or early college level. Use clear examples and avoid overly technical jargon. Structure your response with ### for main sections and #### for subsections. Use numbered lists for sequential information and bullet points for key concepts. Include practical examples and analogies.",
+        "graduate": "Explain this concept at a graduate level. Include technical details, theoretical background, and academic context. Use ### for major sections, #### for subsections, and ##### for specific topics. Structure with numbered lists for processes and bullet points for key principles. Include relevant terminology and detailed explanations.",
+        "advanced": "Explain this concept at an expert level. Include cutting-edge research, complex theories, and professional applications. Use clear section headers (### #### #####) and structure with numbered lists for methodologies and bullet points for key insights. Be comprehensive and technically precise."
+    }
+    
+    system_prompt = level_prompts.get(level.lower(), level_prompts["student"])
+    
+    # Adjust max_tokens based on level to balance detail vs speed
+    max_tokens = 800 if level.lower() in ['graduate', 'advanced'] else 600
+    
+    payload = {
+        "contents": [{
+            "parts": [{
+                "text": f"{system_prompt}\n\nPlease explain: {topic}"
+            }]
+        }],
+        "generationConfig": {
+            "maxOutputTokens": max_tokens,
+            "temperature": 0.7,
+            "topP": 0.8,
+            "topK": 40
+        }
+    }
+    
+    headers = {
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        # Conservative timeout for Render's 30s worker limit
+        timeout_duration = 12 if level.lower() in ['graduate', 'advanced'] else 10
+        print(f"Google API: Level '{level}', timeout: {timeout_duration}s")
+        
+        url_with_key = f"{GOOGLE_URL}?key={GOOGLE_API_KEY}"
+        response = requests.post(url_with_key, json=payload, headers=headers, timeout=timeout_duration)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if 'candidates' not in data or len(data['candidates']) == 0:
+            return None, "Invalid response from Google AI service"
+        
+        if 'content' not in data['candidates'][0] or 'parts' not in data['candidates'][0]['content']:
+            return None, "Invalid response format from Google AI service"
+        
+        explanation = data['candidates'][0]['content']['parts'][0]['text']
+        
+        # Check if response was truncated
+        finish_reason = data['candidates'][0].get('finishReason', '')
+        if finish_reason == 'MAX_TOKENS':
+            explanation += "\n\n*[Note: This explanation was truncated due to length limits. Try asking for a more specific aspect of this topic for a complete answer.]*"
+        
+        return explanation, None
+        
+    except requests.exceptions.RequestException as e:
+        return None, f"Google API request failed: {str(e)}"
+    except (KeyError, IndexError) as e:
+        return None, f"Invalid Google API response format: {str(e)}"
+    except Exception as e:
+        return None, f"Unexpected error: {str(e)}"
+
+# BACKUP: OpenRouter implementation (commented out but kept for fallback)
+def get_openrouter_explanation(topic, level):
+    """Get explanation from OpenRouter API (BACKUP IMPLEMENTATION)"""
     if not OPENROUTER_API_KEY:
         return None, "OpenRouter API key not configured"
     
@@ -172,7 +268,7 @@ def get_ai_explanation(topic, level):
     
     system_prompt = level_prompts.get(level.lower(), level_prompts["student"])
     
-    # Very conservative max_tokens and timeout for Render's constraints
+    # Adjust max_tokens based on level to balance detail vs speed
     max_tokens = 800 if level.lower() in ['graduate', 'advanced'] else 600
     
     payload = {
@@ -199,7 +295,7 @@ def get_ai_explanation(topic, level):
     try:
         # Ultra-conservative timeout for Render's 30s worker limit
         timeout_duration = 12 if level.lower() in ['graduate', 'advanced'] else 10
-        print(f"Level received: '{level}', Level processed: '{level.lower()}', Using timeout: {timeout_duration}s")
+        print(f"OpenRouter API: Level '{level}', timeout: {timeout_duration}s")
         response = requests.post(OPENROUTER_URL, json=payload, headers=headers, timeout=timeout_duration)
         response.raise_for_status()
         
@@ -228,10 +324,10 @@ def get_ai_explanation(topic, level):
 def explain_concept():
     """Main endpoint to get concept explanations"""
     try:
-        # Check if API key is available first
-        if not OPENROUTER_API_KEY:
-            print("ERROR: OPENROUTER_API_KEY is not set")
-            return jsonify({'error': 'OpenRouter API key not configured on server'}), 500
+        # Check if at least one API key is available
+        if not GOOGLE_API_KEY and not OPENROUTER_API_KEY:
+            print("ERROR: No API keys are configured")
+            return jsonify({'error': 'No API keys configured on server'}), 500
         
         data = request.get_json()
         
@@ -253,6 +349,8 @@ def explain_concept():
         if level.lower() not in valid_levels:
             return jsonify({'error': f'Invalid level. Must be one of: {", ".join(valid_levels)}'}), 400
         
+        print(f"Request: topic='{topic}', level='{level}', API={'Google' if USE_GOOGLE_API else 'OpenRouter'}")
+        
         # Check cache first (skip if force_refresh is True)
         if not force_refresh:
             try:
@@ -263,7 +361,8 @@ def explain_concept():
                         'level': level,
                         'explanation': cached_explanation,
                         'cached': True,
-                        'regenerated': False
+                        'regenerated': False,
+                        'api_used': 'Cached'
                     })
             except Exception as cache_error:
                 print(f"Cache error (non-fatal): {cache_error}")
@@ -288,7 +387,8 @@ def explain_concept():
             'level': level,
             'explanation': explanation,
             'cached': False,
-            'regenerated': force_refresh  # Indicate if this was a regeneration
+            'regenerated': force_refresh,
+            'api_used': 'Google AI Studio' if USE_GOOGLE_API else 'OpenRouter'
         })
         
     except Exception as e:
