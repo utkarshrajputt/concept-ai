@@ -1,0 +1,81 @@
+name: Keep Render Backend Alive
+
+on:
+  schedule:
+    # Run every 12 minutes (*/12 * * * *)
+    - cron: '*/12 * * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  ping-backend:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Ping Backend Health Endpoint
+      run: |
+        echo "🏓 Pinging backend to prevent Render spindown..."
+        
+        # Get current timestamp
+        timestamp=$(date '+%Y-%m-%d %H:%M:%S UTC')
+        echo "Timestamp: $timestamp"
+        
+        # Ping the health endpoint with timeout and retry logic
+        response=$(curl -s -w "\n%{http_code}\n%{time_total}" \
+          --max-time 30 \
+          --retry 3 \
+          --retry-delay 5 \
+          --retry-max-time 120 \
+          "https://concept-ai-backend.onrender.com/health" || echo "CURL_FAILED")
+        
+        # Parse response
+        if [[ "$response" == "CURL_FAILED" ]]; then
+          echo "❌ Failed to connect to backend"
+          exit 1
+        fi
+        
+        # Extract HTTP status code and response time from curl output
+        http_code=$(echo "$response" | tail -n 1)
+        response_time=$(echo "$response" | tail -n 2 | head -n 1)
+        response_body=$(echo "$response" | head -n -2)
+        
+        echo "HTTP Status: $http_code"
+        echo "Response Time: ${response_time}s"
+        echo "Response Body: $response_body"
+        
+        # Check if backend is healthy
+        if [[ "$http_code" == "200" ]]; then
+          echo "✅ Backend is alive and healthy!"
+          
+          # Parse JSON to check status (optional)
+          if echo "$response_body" | grep -q '"status":"healthy"'; then
+            echo "🎯 Health check confirmed: Backend status is healthy"
+          fi
+          
+          # Log successful ping for monitoring
+          echo "📊 Keep-alive ping successful at $timestamp"
+        else
+          echo "⚠️  Backend responded with HTTP $http_code"
+          echo "Response: $response_body"
+          
+          # Don't fail the job for non-200 responses during spinup
+          # Render might return 503 during cold start
+          if [[ "$http_code" == "503" ]]; then
+            echo "🔄 Backend might be spinning up (503), this is normal"
+          else
+            echo "❌ Unexpected HTTP status code: $http_code"
+            exit 1
+          fi
+        fi
+        
+        echo "🏁 Keep-alive job completed"
+
+    - name: Log Ping Summary
+      if: always()
+      run: |
+        echo "=== PING SUMMARY ==="
+        echo "Target: https://concept-ai-backend.onrender.com/health"
+        echo "Purpose: Prevent Render free tier spindown"
+        echo "Frequency: Every 12 minutes"
+        echo "Render spindown threshold: 15 minutes of inactivity"
+        echo "Monthly usage: ~1,460 pings (well within free GitHub Actions limits)"
+        echo "==================="
