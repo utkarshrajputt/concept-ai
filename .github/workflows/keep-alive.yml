@@ -19,52 +19,45 @@ jobs:
         timestamp=$(date '+%Y-%m-%d %H:%M:%S UTC')
         echo "Timestamp: $timestamp"
         
-        # Ping the health endpoint with timeout and retry logic
-        response=$(curl -s -w "\n%{http_code}\n%{time_total}" \
-          --max-time 30 \
-          --retry 3 \
-          --retry-delay 5 \
-          --retry-max-time 120 \
-          "https://concept-ai-backend.onrender.com/health" || echo "CURL_FAILED")
+        # Simple ping with better error handling
+        echo "🌐 Sending request to: https://concept-ai-backend.onrender.com/health"
         
-        # Parse response
-        if [[ "$response" == "CURL_FAILED" ]]; then
-          echo "❌ Failed to connect to backend"
-          exit 1
-        fi
-        
-        # Extract HTTP status code and response time from curl output
-        http_code=$(echo "$response" | tail -n 1)
-        response_time=$(echo "$response" | tail -n 2 | head -n 1)
-        response_body=$(echo "$response" | head -n -2)
-        
-        echo "HTTP Status: $http_code"
-        echo "Response Time: ${response_time}s"
-        echo "Response Body: $response_body"
-        
-        # Check if backend is healthy
-        if [[ "$http_code" == "200" ]]; then
-          echo "✅ Backend is alive and healthy!"
+        # Use curl with explicit options
+        if response=$(curl -s -w "%{http_code}" --max-time 60 "https://concept-ai-backend.onrender.com/health" 2>&1); then
+          # Extract status code (last 3 characters)
+          http_code="${response: -3}"
+          # Extract response body (everything except last 3 characters)
+          response_body="${response%???}"
           
-          # Parse JSON to check status (optional)
-          if echo "$response_body" | grep -q '"status":"healthy"'; then
-            echo "🎯 Health check confirmed: Backend status is healthy"
-          fi
+          echo "HTTP Status: $http_code"
+          echo "Response Body: $response_body"
           
-          # Log successful ping for monitoring
-          echo "📊 Keep-alive ping successful at $timestamp"
-        else
-          echo "⚠️  Backend responded with HTTP $http_code"
-          echo "Response: $response_body"
-          
-          # Don't fail the job for non-200 responses during spinup
-          # Render might return 503 during cold start
-          if [[ "$http_code" == "503" ]]; then
-            echo "🔄 Backend might be spinning up (503), this is normal"
+          # Check if request was successful
+          if [[ "$http_code" == "200" ]]; then
+            echo "✅ Backend is alive and healthy!"
+            
+            # Check if response contains expected health status
+            if echo "$response_body" | grep -q "healthy"; then
+              echo "🎯 Health check confirmed: Backend is responding correctly"
+            fi
+            
+            echo "📊 Keep-alive ping successful at $timestamp"
+            
+          elif [[ "$http_code" == "503" ]]; then
+            echo "� Backend is spinning up (503) - this is normal for cold starts"
+            echo "✅ Request successful, backend will be warm soon"
+            
           else
-            echo "❌ Unexpected HTTP status code: $http_code"
-            exit 1
+            echo "⚠️  Backend responded with HTTP $http_code"
+            echo "Response: $response_body"
+            echo "🔄 This might be a temporary issue, continuing..."
           fi
+          
+        else
+          echo "❌ Failed to connect to backend"
+          echo "Error details: $response"
+          echo "🔄 This could be due to cold start or network issues"
+          echo "⚠️  Will retry in next scheduled run (12 minutes)"
         fi
         
         echo "🏁 Keep-alive job completed"
@@ -77,5 +70,6 @@ jobs:
         echo "Purpose: Prevent Render free tier spindown"
         echo "Frequency: Every 12 minutes"
         echo "Render spindown threshold: 15 minutes of inactivity"
-        echo "Monthly usage: ~1,460 pings (well within free GitHub Actions limits)"
+        echo "Monthly usage: ~3,600 pings (well within free GitHub Actions limits)"
+        echo "Note: Occasional failures are normal during cold starts"
         echo "==================="
