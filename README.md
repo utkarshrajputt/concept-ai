@@ -41,6 +41,7 @@ A sophisticated web application that delivers AI-powered explanations of any con
 
 - **Flask** - Lightweight Python web framework
 - **SQLite** - Embedded database for caching
+- **Google AI Studio** – AI model access (Gemini 1.5 Flash)
 - **OpenRouter API** - AI model access (DeepSeek R1 Free)
 - **Flask-CORS** - Cross-origin resource sharing
 - **Python-dotenv** - Environment variable management
