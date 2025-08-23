@@ -2128,6 +2128,8 @@ function App() {
   // Delete specific history item
   const deleteHistoryItem = async (item) => {
     try {
+      console.log('Attempting to delete item:', item);
+      
       const response = await fetch(`${API_BASE_URL}/delete-topic`, {
         method: 'DELETE',
         headers: {
@@ -2138,6 +2140,9 @@ function App() {
           level: item.level
         })
       });
+
+      const responseData = await response.json();
+      console.log('Delete response:', responseData);
 
       if (response.ok) {
         // Remove from local history
@@ -2150,12 +2155,19 @@ function App() {
         // Show success message
         alert(`Successfully deleted "${item.topic}" from history`);
       } else {
-        const errorData = await response.json();
-        alert(`Failed to delete: ${errorData.message || 'Unknown error'}`);
+        console.error('Delete failed:', responseData);
+        // Show more detailed error message
+        const errorMessage = responseData.message || responseData.error || 'Unknown error';
+        alert(`Failed to delete: ${errorMessage}`);
+        
+        // Log debug info if available
+        if (responseData.debug_info) {
+          console.log('Debug info:', responseData.debug_info);
+        }
       }
     } catch (error) {
       console.error('Error deleting history item:', error);
-      alert('Failed to delete item. Please try again.');
+      alert(`Failed to delete item: ${error.message}. Please try again.`);
     }
   };
 

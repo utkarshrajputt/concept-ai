@@ -909,29 +909,51 @@ def delete_topic():
         conn = sqlite3.connect(DATABASE_PATH)
         cursor = conn.cursor()
         
-        # Normalize the topic for consistent deletion
+        # Normalize the topic for consistent deletion (same as storage)
         normalized_topic = normalize_topic(topic)
+        normalized_level = level.lower()
         
-        # Delete the specific topic and level combination
+        print(f"Attempting to delete - Original topic: '{topic}', Normalized: '{normalized_topic}', Level: '{normalized_level}'")
+        
+        # First, try to find if the topic exists
         cursor.execute(
-            'DELETE FROM explanations WHERE topic = ? AND level = ?',
-            (normalized_topic, level.lower())
+            'SELECT topic, level FROM explanations WHERE topic = ? AND level = ?',
+            (normalized_topic, normalized_level)
         )
+        existing = cursor.fetchone()
         
-        deleted_count = cursor.rowcount
-        conn.commit()
-        conn.close()
-        
-        if deleted_count > 0:
-            print(f"Deleted topic: {normalized_topic}, level: {level}")
+        if existing:
+            print(f"Found matching topic in database: {existing}")
+            # Delete the specific topic and level combination
+            cursor.execute(
+                'DELETE FROM explanations WHERE topic = ? AND level = ?',
+                (normalized_topic, normalized_level)
+            )
+            
+            deleted_count = cursor.rowcount
+            conn.commit()
+            conn.close()
+            
+            print(f"Successfully deleted topic: {normalized_topic}, level: {normalized_level}")
             return jsonify({
                 'message': f'Successfully deleted "{topic}" at {level} level',
                 'deleted': True
             })
         else:
+            # Topic not found, let's see what topics do exist for debugging
+            cursor.execute('SELECT topic, level FROM explanations LIMIT 10')
+            sample_topics = cursor.fetchall()
+            print(f"Topic not found. Sample topics in database: {sample_topics}")
+            
+            conn.close()
             return jsonify({
-                'message': f'Topic "{topic}" at {level} level not found',
-                'deleted': False
+                'message': f'Topic "{topic}" at {level} level not found in database',
+                'deleted': False,
+                'debug_info': {
+                    'normalized_topic': normalized_topic,
+                    'normalized_level': normalized_level,
+                    'sample_topics': sample_topics[:5]  # Limit to 5 for response size
+                }
             }), 404
         
     except Exception as e:
