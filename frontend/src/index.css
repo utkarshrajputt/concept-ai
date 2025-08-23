@@ -19,17 +19,100 @@
       -webkit-text-size-adjust: 100%;
       /* Prevent zoom on form focus */
       touch-action: manipulation;
+      /* Support for dynamic viewport units */
+      height: 100%;
+      height: 100dvh;
     }
 
     body {
       /* Prevent body scroll when keyboard is open */
       overflow-x: hidden;
+      height: 100%;
+      height: 100dvh;
     }
 
     /* Fix for mobile keyboards pushing content */
     .mobile-content {
       height: 100vh;
       height: 100dvh; /* Dynamic viewport height for better mobile support */
+    }
+
+    /* Keyboard-aware input positioning */
+    .keyboard-aware-input {
+      /* Ensure input touches the bottom edge with minimal spacing */
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 9999;
+      margin: 0;
+      padding: 0;
+      /* Smooth transitions for keyboard events */
+      transition: transform 0.3s ease-in-out;
+      /* Ensure it respects safe areas */
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* Prevent iOS zoom on input focus */
+    input[type="text"],
+    input[type="search"],
+    textarea,
+    select {
+      font-size: 16px !important;
+      -webkit-appearance: none;
+      appearance: none;
+      border-radius: 0;
+    }
+
+    /* Enhanced touch targets for mobile */
+    button,
+    input,
+    select {
+      min-height: 44px; /* Apple's recommended touch target size */
+    }
+
+    /* Better touch interaction for buttons */
+    button {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Improve delete button touch targets */
+    button[title*="Delete"] {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  }
+
+  /* Safe area support for devices with notches */
+  @supports (padding: max(0px)) {
+    .safe-area-inset-bottom {
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+  }
+
+  /* Keyboard open state handling */
+  @media screen and (max-width: 1024px) {
+    body.keyboard-open {
+      /* Prevent background scrolling when keyboard is open */
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+    }
+
+    /* Enhanced input positioning when keyboard is open */
+    body.keyboard-open .keyboard-aware-input {
+      /* Move input higher when keyboard is detected - reduced offset */
+      transform: translateY(-10px);
+      /* Add extra backdrop blur for better visibility */
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+    }
+
+    /* Ensure smooth transitions for keyboard events */
+    .keyboard-aware-input {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        backdrop-filter 0.3s ease;
     }
   }
 

@@ -3,73 +3,73 @@ name: Keep Render Backend Alive
 on:
   schedule:
     # Run every 12 minutes (*/12 * * * *)
-    - cron: '*/12 * * * *'
+    - cron: "*/12 * * * *"
   workflow_dispatch: # Allow manual triggering
 
 jobs:
   ping-backend:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Ping Backend Health Endpoint
-      run: |
-        echo "🏓 Pinging backend to prevent Render spindown..."
-        
-        # Get current timestamp
-        timestamp=$(date '+%Y-%m-%d %H:%M:%S UTC')
-        echo "Timestamp: $timestamp"
-        
-        # Simple ping with better error handling
-        echo "🌐 Sending request to: https://concept-ai-backend.onrender.com/health"
-        
-        # Use curl with explicit options
-        if response=$(curl -s -w "%{http_code}" --max-time 60 "https://concept-ai-backend.onrender.com/health" 2>&1); then
-          # Extract status code (last 3 characters)
-          http_code="${response: -3}"
-          # Extract response body (everything except last 3 characters)
-          response_body="${response%???}"
-          
-          echo "HTTP Status: $http_code"
-          echo "Response Body: $response_body"
-          
-          # Check if request was successful
-          if [[ "$http_code" == "200" ]]; then
-            echo "✅ Backend is alive and healthy!"
+      - name: Ping Backend Health Endpoint
+        run: |
+          echo "🏓 Pinging backend to prevent Render spindown..."
+
+          # Get current timestamp
+          timestamp=$(date '+%Y-%m-%d %H:%M:%S UTC')
+          echo "Timestamp: $timestamp"
+
+          # Simple ping with better error handling
+          echo "🌐 Sending request to: https://concept-ai-backend.onrender.com/health"
+
+          # Use curl with explicit options
+          if response=$(curl -s -w "%{http_code}" --max-time 60 "https://concept-ai-backend.onrender.com/health" 2>&1); then
+            # Extract status code (last 3 characters)
+            http_code="${response: -3}"
+            # Extract response body (everything except last 3 characters)
+            response_body="${response%???}"
             
-            # Check if response contains expected health status
-            if echo "$response_body" | grep -q "healthy"; then
-              echo "🎯 Health check confirmed: Backend is responding correctly"
+            echo "HTTP Status: $http_code"
+            echo "Response Body: $response_body"
+            
+            # Check if request was successful
+            if [[ "$http_code" == "200" ]]; then
+              echo "✅ Backend is alive and healthy!"
+              
+              # Check if response contains expected health status
+              if echo "$response_body" | grep -q "healthy"; then
+                echo "🎯 Health check confirmed: Backend is responding correctly"
+              fi
+              
+              echo "📊 Keep-alive ping successful at $timestamp"
+              
+            elif [[ "$http_code" == "503" ]]; then
+              echo "� Backend is spinning up (503) - this is normal for cold starts"
+              echo "✅ Request successful, backend will be warm soon"
+              
+            else
+              echo "⚠️  Backend responded with HTTP $http_code"
+              echo "Response: $response_body"
+              echo "🔄 This might be a temporary issue, continuing..."
             fi
             
-            echo "📊 Keep-alive ping successful at $timestamp"
-            
-          elif [[ "$http_code" == "503" ]]; then
-            echo "� Backend is spinning up (503) - this is normal for cold starts"
-            echo "✅ Request successful, backend will be warm soon"
-            
           else
-            echo "⚠️  Backend responded with HTTP $http_code"
-            echo "Response: $response_body"
-            echo "🔄 This might be a temporary issue, continuing..."
+            echo "❌ Failed to connect to backend"
+            echo "Error details: $response"
+            echo "🔄 This could be due to cold start or network issues"
+            echo "⚠️  Will retry in next scheduled run (12 minutes)"
           fi
-          
-        else
-          echo "❌ Failed to connect to backend"
-          echo "Error details: $response"
-          echo "🔄 This could be due to cold start or network issues"
-          echo "⚠️  Will retry in next scheduled run (12 minutes)"
-        fi
-        
-        echo "🏁 Keep-alive job completed"
 
-    - name: Log Ping Summary
-      if: always()
-      run: |
-        echo "=== PING SUMMARY ==="
-        echo "Target: https://concept-ai-backend.onrender.com/health"
-        echo "Purpose: Prevent Render free tier spindown"
-        echo "Frequency: Every 12 minutes"
-        echo "Render spindown threshold: 15 minutes of inactivity"
-        echo "Monthly usage: ~3,600 pings (well within free GitHub Actions limits)"
-        echo "Note: Occasional failures are normal during cold starts"
-        echo "==================="
+          echo "🏁 Keep-alive job completed"
+
+      - name: Log Ping Summary
+        if: always()
+        run: |
+          echo "=== PING SUMMARY ==="
+          echo "Target: https://concept-ai-backend.onrender.com/health"
+          echo "Purpose: Prevent Render free tier spindown"
+          echo "Frequency: Every 12 minutes"
+          echo "Render spindown threshold: 15 minutes of inactivity"
+          echo "Monthly usage: ~3,600 pings (well within free GitHub Actions limits)"
+          echo "Note: Occasional failures are normal during cold starts"
+          echo "==================="

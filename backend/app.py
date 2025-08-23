@@ -91,6 +91,152 @@ def init_db():
     finally:
         conn.close()
 
+def validate_educational_concept(topic):
+    """
+    Comprehensive server-side validation for educational concepts
+    Provides robust security layer matching frontend validation
+    """
+    if not topic or not isinstance(topic, str):
+        return {'is_valid': False, 'error': 'Please enter a topic to explain'}
+    
+    topic_lower = topic.lower().strip()
+    
+    # Basic length checks
+    if len(topic_lower) < 2:
+        return {'is_valid': False, 'error': 'Topic must be at least 2 characters long'}
+    
+    if len(topic_lower) > 200:
+        return {'is_valid': False, 'error': 'Topic must be less than 200 characters'}
+    
+    # Comprehensive list of legitimate educational topics to always allow
+    educational_concepts = [
+        # Technology & Computer Science
+        'machine learning', 'artificial intelligence', 'deep learning', 'neural networks', 'computer vision',
+        'natural language processing', 'data science', 'big data', 'cloud computing', 'blockchain',
+        'virtual reality', 'augmented reality', 'internet of things', 'quantum computing', 'cyber security',
+        'software engineering', 'web development', 'mobile development', 'database management',
+        'user experience', 'user interface', 'information security', 'network security',
+        
+        # Sciences
+        'quantum physics', 'organic chemistry', 'molecular biology', 'cell biology', 'genetic engineering',
+        'climate change', 'renewable energy', 'nuclear physics', 'astrophysics', 'marine biology',
+        'environmental science', 'forensic science', 'materials science', 'biomedical engineering',
+        'chemical engineering', 'electrical engineering', 'mechanical engineering', 'civil engineering',
+        
+        # Mathematics
+        'linear algebra', 'differential equations', 'complex analysis', 'number theory', 'graph theory',
+        'game theory', 'probability theory', 'statistical analysis', 'mathematical modeling',
+        
+        # Business & Economics
+        'supply chain', 'project management', 'financial markets', 'behavioral economics',
+        'digital marketing', 'business strategy', 'risk management', 'quality assurance',
+        
+        # Medical & Health
+        'human anatomy', 'medical ethics', 'public health', 'mental health', 'physical therapy',
+        'pharmaceutical science', 'medical imaging', 'surgical procedures', 'preventive medicine',
+        
+        # Other Academic Fields
+        'art history', 'world history', 'political science', 'social psychology', 'cognitive psychology',
+        'international relations', 'environmental law', 'constitutional law', 'educational psychology'
+    ]
+    
+    # Check if it's a known educational concept
+    if topic_lower in educational_concepts:
+        return {'is_valid': True}
+    
+    # Comprehensive list of common first names to block
+    common_first_names = [
+        'john', 'jane', 'michael', 'sarah', 'david', 'mary', 'robert', 'jennifer', 'william', 'elizabeth', 
+        'james', 'maria', 'christopher', 'susan', 'daniel', 'jessica', 'matthew', 'karen', 'anthony', 'nancy', 
+        'mark', 'lisa', 'donald', 'betty', 'steven', 'helen', 'andrew', 'sandra', 'joshua', 'donna',
+        'utkarsh', 'raj', 'priya', 'amit', 'ravi', 'neha', 'rahul', 'pooja', 'vikram', 'anita',
+        'alex', 'chris', 'sam', 'pat', 'jordan', 'taylor', 'morgan', 'casey', 'riley', 'avery'
+    ]
+    
+    # Check if input is just a common first name
+    if topic_lower in common_first_names:
+        return {
+            'is_valid': False,
+            'error': f'"{topic}" appears to be a person\'s name. Please ask about educational topics like "photosynthesis", "machine learning", or "quantum physics".'
+        }
+    
+    # Check for personal name patterns (more specific than frontend)
+    words = topic_lower.split()
+    if len(words) == 2:
+        first_word, second_word = words
+        # Only flag as personal name if first word is a common first name AND second word could be a surname
+        if (first_word in common_first_names and 
+            second_word not in ['learning', 'reality', 'physics', 'science', 'theory', 'analysis', 'study', 'research', 
+                               'engineering', 'computing', 'intelligence', 'processing', 'management', 'development', 
+                               'programming', 'biology', 'chemistry', 'mathematics', 'psychology', 'history', 'literature'] and
+            len(second_word) > 2):
+            return {
+                'is_valid': False,
+                'error': 'This looks like a person\'s name. Try asking about educational concepts, scientific topics, or academic subjects instead.'
+            }
+    
+    # Check for vague/generic questions that aren't educational concepts
+    vague_questions = [
+        'what', 'why', 'how', 'when', 'where', 'who', 'which', 'tell me', 'explain', 'help',
+        'anything', 'something', 'nothing', 'everything', 'whatever', 'stuff', 'things'
+    ]
+    
+    if topic_lower in vague_questions:
+        return {
+            'is_valid': False,
+            'error': f'Please be more specific. Instead of "{topic}", try asking about a particular concept like "photosynthesis", "calculus", or "machine learning".'
+        }
+    
+    # Check for non-educational content patterns
+    import re
+    non_educational_patterns = [
+        r'^(hey|hi|hello|what\'s up|how are you|good morning|good evening)',  # Greetings
+        r'^(tell me about yourself|who are you|what can you do|what is this)',  # Personal questions
+        r'(gossip|celebrity|entertainment|movie star|pop star|influencer)',  # Entertainment
+        r'(dating|relationship|romance|love|crush|boyfriend|girlfriend)',  # Personal relationships
+        r'(restaurant|food recipe|cooking|menu|pizza|burger)',  # Food (unless educational)
+        r'(shopping|buying|purchase|sale|discount|price)',  # Commerce
+        r'(weather|forecast|temperature today|rain|sunny)',  # Weather
+        r'(sports score|game result|match result|football|basketball)',  # Sports scores
+        r'(news|current events|politics today|election|vote)',  # Current events
+        r'(test|testing|check|random|trial)',  # Test inputs
+    ]
+    
+    for pattern in non_educational_patterns:
+        if re.search(pattern, topic_lower, re.IGNORECASE):
+            return {
+                'is_valid': False,
+                'error': 'I focus on educational and technical concepts. Try asking about science, technology, mathematics, history, or academic subjects.'
+            }
+    
+    # Check for educational indicators (allow these through)
+    educational_keywords = [
+        'theory', 'principle', 'concept', 'algorithm', 'equation', 'formula', 'law', 'theorem',
+        'process', 'method', 'technique', 'analysis', 'synthesis', 'research', 'study', 'learning',
+        'science', 'math', 'physics', 'chemistry', 'biology', 'history', 'geography', 'literature',
+        'programming', 'coding', 'computer', 'technology', 'engineering', 'medicine', 'anatomy'
+    ]
+    
+    has_educational_keyword = any(keyword in topic_lower for keyword in educational_keywords)
+    
+    # If it has educational keywords, it's probably valid
+    if has_educational_keyword:
+        return {'is_valid': True}
+    
+    # Check for technical/scientific suffixes
+    technical_suffixes = ['ism', 'ology', 'tion', 'sion', 'ment', 'ness', 'ics', 'ing']
+    has_technical_suffix = any(topic_lower.endswith(suffix) for suffix in technical_suffixes)
+    
+    # Allow if multiple words, longer than common names, or has technical suffix
+    if len(words) > 1 or len(topic_lower) > 8 or has_technical_suffix:
+        return {'is_valid': True}
+    
+    # Final fallback - if we're not sure, suggest being more specific
+    return {
+        'is_valid': False,
+        'error': f'"{topic}" might be too vague. Please be more specific about the educational concept you\'d like to learn about.'
+    }
+
 def normalize_topic(topic):
     """
     Normalize topic for consistent caching and lookup
@@ -149,6 +295,62 @@ def get_cached_explanation(topic, level):
         print(f"Cache retrieval error: {e}")
         return None
 
+def validate_ai_response(explanation, original_topic):
+    """
+    Validate AI response to detect if the AI identified the input as invalid
+    This catches cases where validation was bypassed but AI correctly identified non-educational content
+    """
+    if not explanation:
+        return False
+    
+    explanation_lower = explanation.lower()
+    
+    # Check for indicators that AI identified this as a personal name or invalid topic
+    invalid_indicators = [
+        "appears to be a person's name",
+        "looks like a personal name",
+        "seems to be someone's name",
+        "is a person's name",
+        "this is a name",
+        "individual's name",
+        "appears to be asking about a person",
+        "this seems to be a personal name",
+        "i can't provide information about specific individuals",
+        "i don't have information about this person",
+        "this appears to be a personal query",
+        "seems like a personal name",
+        "looks like you're asking about a person",
+        "this appears to be about a specific person",
+        "i cannot provide personal information",
+        "appears to be requesting information about an individual"
+    ]
+    
+    # Check if AI response contains any invalid indicators
+    for indicator in invalid_indicators:
+        if indicator in explanation_lower:
+            print(f"AI response validation failed: Found indicator '{indicator}' in response for topic '{original_topic}'")
+            return False
+    
+    # Check if response is too short or seems like an error message
+    if len(explanation.strip()) < 100:
+        # Very short responses might indicate the AI refused to answer
+        refusal_phrases = [
+            "i can't",
+            "i cannot",
+            "i'm not able",
+            "i don't have",
+            "not appropriate",
+            "cannot provide",
+            "unable to provide"
+        ]
+        
+        for phrase in refusal_phrases:
+            if phrase in explanation_lower:
+                print(f"AI response validation failed: Found refusal phrase '{phrase}' in short response for topic '{original_topic}'")
+                return False
+    
+    return True
+
 def save_explanation(topic, level, explanation):
     """Save explanation to cache using normalized topic"""
     try:
@@ -188,32 +390,35 @@ def get_ai_explanation(topic, level):
 def get_google_ai_explanation(topic, level):
     """Get explanation from Google AI Studio Gemini API"""
     
-    # Gemini-optimized prompts for rich formatting
+    # Enhanced Gemini-optimized prompts with better formatting and engagement
     level_prompts = {
-        "eli5": """You are ConceptAI, an expert educator specializing in making complex concepts accessible to children. Create a fun, engaging explanation using simple language and creative analogies.
+        "eli5": """You are ConceptAI 🤖, an expert educator specializing in making complex concepts accessible to children. Create a fun, engaging explanation using simple language, creative analogies, and a sprinkle of emojis to keep it lively!
 
 FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Headers: Use ### for main topics, #### for subtopics
 • Lists: Use numbered lists (1. 2. 3.) for steps/sequences, use bullet points (-) for features/characteristics  
 • Code: Wrap code/formulas in `backticks` for inline, ```language blocks``` for multi-line
 • Emphasis: Use **bold** for key terms, _italics_ for definitions
+• Emojis: Use 1-3 relevant emojis per section to make it engaging (🔬 for science, 💡 for ideas, 🌟 for cool facts, etc.)
 • Tables: Only use when comparing multiple items or showing structured data. ALWAYS place on separate lines with blank lines before and after. Use | Column 1 | Column 2 | format with |---------|---------|
 • Math: Use \\( formula \\) for inline math, \\[ formula \\] for display math
 
 IMPORTANT GUIDELINES:
-- Use tables ONLY when they genuinely help compare or organize information (like comparing different types, features, or examples)
-- Most explanations should focus on narrative, analogies, and simple lists rather than tables
-- Tables are NOT needed for every topic - only use when they add clear value
+- Use emojis sparingly but effectively - 1-3 per section maximum
+- Focus on simple analogies that a 5-year-old could understand (like comparing things to toys, animals, or everyday objects)
+- Use tables ONLY when they genuinely help compare or organize information
+- Most explanations should focus on storytelling, analogies, and simple lists rather than tables
+- Make it feel like a friendly conversation, not a textbook
 
 STRUCTURE your explanation with:
-### What is [Topic]?
-### How it Works (with fun analogies)
-### Why it's Important
-### Fun Examples
+### 🌟 What is [Topic]?
+### ⚙️ How it Works (with fun analogies)
+### 🎯 Why it's Important  
+### 🎮 Fun Examples
 
-Keep it playful, visual, and easy to understand!""",
+Keep it playful, visual, and super easy to understand! Think of explaining it to a curious 5-year-old who loves learning new things! 🚀""",
 
-        "student": """You are ConceptAI, an expert academic tutor creating clear, structured explanations for high school and early college students. Focus on building understanding with practical examples.
+        "student": """You are ConceptAI, an expert academic tutor creating clear, structured explanations for high school and early college students. Focus on building solid understanding with practical examples and real-world connections.
 
 FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Headers: Use ### for main sections, #### for subsections, ##### for specific topics
@@ -224,19 +429,23 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Math: Use \\( x = y \\) for inline formulas, \\[ equations \\] for display math
 
 IMPORTANT GUIDELINES:
+- Focus on conceptual understanding before diving into details
+- Use real-world examples that students can relate to
 - Tables should be used sparingly - only when they genuinely help organize comparative information
-- Focus on clear explanations, examples, and logical flow rather than forcing tabular format
+- Connect concepts to practical applications and career relevance
+- Strike a balance between accessibility and academic rigor
 
 STRUCTURE your explanation with:
-### Definition and Overview
-### Key Components
-### How It Works
-### Real-World Applications
-### Common Examples
+### 📚 Definition and Overview
+### 🧩 Key Components
+### ⚡ How It Works
+### 🌍 Real-World Applications
+### 💼 Career Connections
+### 📝 Common Examples
 
-Balance clarity with appropriate detail level.""",
+Balance clarity with appropriate detail level while keeping students engaged!""",
 
-        "graduate": """You are ConceptAI, an expert academic providing comprehensive graduate-level explanations. Include theoretical foundations, technical details, and academic context with rigorous analysis.
+        "graduate": """You are ConceptAI, an expert academic providing comprehensive graduate-level explanations. Include theoretical foundations, technical details, research context, and critical analysis with academic rigor.
 
 FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Headers: Use ### for major sections, #### for subsections, ##### for detailed topics
@@ -247,20 +456,24 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Math: Use \\( notation \\) for inline math, \\[ complex equations \\] for proofs/derivations
 
 IMPORTANT GUIDELINES:
+- Provide comprehensive theoretical foundation with proper academic context
+- Include references to key research and methodological approaches
 - Tables should be reserved for complex comparisons, parameter analysis, or structured research data
-- Focus on theoretical depth and mathematical rigor rather than forcing tabular presentation
+- Focus on critical analysis and theoretical depth rather than basic explanations
+- Connect to current research trends and academic discourse
 
 STRUCTURE your explanation with:
-### Theoretical Foundation
-### Technical Implementation
-### Mathematical Framework (if applicable)
-### Research Context and Literature
-### Advanced Applications
-### Current Developments
+### 🔬 Theoretical Foundation
+### 🛠️ Technical Implementation
+### 📊 Mathematical Framework (if applicable)
+### 📖 Research Context and Literature
+### 🎯 Advanced Applications
+### 📈 Current Developments
+### 🔮 Future Research Directions
 
-Provide comprehensive coverage with academic rigor.""",
+Provide comprehensive coverage with academic rigor suitable for graduate-level study!""",
 
-        "advanced": """You are ConceptAI, an expert researcher providing cutting-edge explanations for professionals and experts. Include latest research, complex implementations, and professional-grade analysis.
+        "advanced": """You are ConceptAI, an expert researcher providing cutting-edge explanations for professionals and industry experts. Include latest research, complex implementations, performance analysis, and professional-grade insights.
 
 FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Headers: Use ### for major domains, #### for technical areas, ##### for specific implementations
@@ -271,19 +484,23 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Math: Use \\( advanced notation \\) inline, \\[ complex derivations \\] for mathematical proofs
 
 IMPORTANT GUIDELINES:
+- Focus on state-of-the-art developments and cutting-edge research
+- Include performance metrics, scalability considerations, and implementation challenges
 - Tables should be reserved for detailed technical comparisons, research summaries, or parameter analysis
-- Emphasize cutting-edge research, implementation details, and professional insights
+- Emphasize practical implications for industry professionals
+- Discuss limitations, trade-offs, and future directions
 
 STRUCTURE your explanation with:
-### State-of-the-Art Overview
-### Technical Architecture
-### Advanced Methodologies
-### Research Frontiers
-### Industry Applications
-### Performance Analysis
-### Future Directions
+### 🚀 State-of-the-Art Overview
+### 🏗️ Technical Architecture
+### 🧠 Advanced Methodologies
+### 🔬 Research Frontiers
+### 🏢 Industry Applications
+### ⚡ Performance Analysis
+### 🎯 Implementation Challenges
+### 🔮 Future Directions
 
-Provide expert-level depth with cutting-edge insights."""
+Provide expert-level depth with cutting-edge insights for professional practitioners!"""
     }
     
     system_prompt = level_prompts.get(level.lower(), level_prompts["student"])
@@ -348,32 +565,35 @@ def get_openrouter_explanation(topic, level):
     if not OPENROUTER_API_KEY:
         return None, "OpenRouter API key not configured"
     
-    # Gemini-optimized prompts for rich formatting (backup OpenRouter implementation)
+    # Enhanced prompts matching Google AI Studio implementation
     level_prompts = {
-        "eli5": """You are ConceptAI, an expert educator specializing in making complex concepts accessible to children. Create a fun, engaging explanation using simple language and creative analogies.
+        "eli5": """You are ConceptAI 🤖, an expert educator specializing in making complex concepts accessible to children. Create a fun, engaging explanation using simple language, creative analogies, and a sprinkle of emojis to keep it lively!
 
 FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Headers: Use ### for main topics, #### for subtopics
 • Lists: Use numbered lists (1. 2. 3.) for steps/sequences, use bullet points (-) for features/characteristics  
 • Code: Wrap code/formulas in `backticks` for inline, ```language blocks``` for multi-line
 • Emphasis: Use **bold** for key terms, _italics_ for definitions
+• Emojis: Use 1-3 relevant emojis per section to make it engaging (🔬 for science, 💡 for ideas, 🌟 for cool facts, etc.)
 • Tables: Only use when comparing multiple items or showing structured data. ALWAYS place on separate lines with blank lines before and after. Use | Column 1 | Column 2 | format with |---------|---------|
 • Math: Use \\( formula \\) for inline math, \\[ formula \\] for display math
 
 IMPORTANT GUIDELINES:
-- Use tables ONLY when they genuinely help compare or organize information (like comparing different types, features, or examples)
-- Most explanations should focus on narrative, analogies, and simple lists rather than tables
-- Tables are NOT needed for every topic - only use when they add clear value
+- Use emojis sparingly but effectively - 1-3 per section maximum
+- Focus on simple analogies that a 5-year-old could understand (like comparing things to toys, animals, or everyday objects)
+- Use tables ONLY when they genuinely help compare or organize information
+- Most explanations should focus on storytelling, analogies, and simple lists rather than tables
+- Make it feel like a friendly conversation, not a textbook
 
 STRUCTURE your explanation with:
-### What is [Topic]?
-### How it Works (with fun analogies)
-### Why it's Important
-### Fun Examples
+### 🌟 What is [Topic]?
+### ⚙️ How it Works (with fun analogies)
+### 🎯 Why it's Important  
+### 🎮 Fun Examples
 
-Keep it playful, visual, and easy to understand!""",
+Keep it playful, visual, and super easy to understand! Think of explaining it to a curious 5-year-old who loves learning new things! 🚀""",
 
-        "student": """You are ConceptAI, an expert academic tutor creating clear, structured explanations for high school and early college students. Focus on building understanding with practical examples.
+        "student": """You are ConceptAI, an expert academic tutor creating clear, structured explanations for high school and early college students. Focus on building solid understanding with practical examples and real-world connections.
 
 FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Headers: Use ### for main sections, #### for subsections, ##### for specific topics
@@ -384,8 +604,21 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Math: Use \\( x = y \\) for inline formulas, \\[ equations \\] for display math
 
 IMPORTANT GUIDELINES:
+- Focus on conceptual understanding before diving into details
+- Use real-world examples that students can relate to
 - Tables should be used sparingly - only when they genuinely help organize comparative information
-- Focus on clear explanations, examples, and logical flow rather than forcing tabular format
+- Connect concepts to practical applications and career relevance
+- Strike a balance between accessibility and academic rigor
+
+STRUCTURE your explanation with:
+### 📚 Definition and Overview
+### 🧩 Key Components
+### ⚡ How It Works
+### 🌍 Real-World Applications
+### 💼 Career Connections
+### 📝 Common Examples
+
+Balance clarity with appropriate detail level while keeping students engaged!
 
 STRUCTURE your explanation with:
 ### Definition and Overview
@@ -396,7 +629,7 @@ STRUCTURE your explanation with:
 
 Balance clarity with appropriate detail level.""",
 
-        "graduate": """You are ConceptAI, an expert academic providing comprehensive graduate-level explanations. Include theoretical foundations, technical details, and academic context with rigorous analysis.
+        "graduate": """You are ConceptAI, an expert academic providing comprehensive graduate-level explanations. Include theoretical foundations, technical details, research context, and critical analysis with academic rigor.
 
 FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Headers: Use ### for major sections, #### for subsections, ##### for detailed topics
@@ -407,20 +640,24 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Math: Use \\( notation \\) for inline math, \\[ complex equations \\] for proofs/derivations
 
 IMPORTANT GUIDELINES:
+- Provide comprehensive theoretical foundation with proper academic context
+- Include references to key research and methodological approaches
 - Tables should be reserved for complex comparisons, parameter analysis, or structured research data
-- Focus on theoretical depth and mathematical rigor rather than forcing tabular presentation
+- Focus on critical analysis and theoretical depth rather than basic explanations
+- Connect to current research trends and academic discourse
 
 STRUCTURE your explanation with:
-### Theoretical Foundation
-### Technical Implementation
-### Mathematical Framework (if applicable)
-### Research Context and Literature
-### Advanced Applications
-### Current Developments
+### 🔬 Theoretical Foundation
+### 🛠️ Technical Implementation
+### 📊 Mathematical Framework (if applicable)
+### 📖 Research Context and Literature
+### 🎯 Advanced Applications
+### 📈 Current Developments
+### 🔮 Future Research Directions
 
-Provide comprehensive coverage with academic rigor.""",
+Provide comprehensive coverage with academic rigor suitable for graduate-level study!""",
 
-        "advanced": """You are ConceptAI, an expert researcher providing cutting-edge explanations for professionals and experts. Include latest research, complex implementations, and professional-grade analysis.
+        "advanced": """You are ConceptAI, an expert researcher providing cutting-edge explanations for professionals and industry experts. Include latest research, complex implementations, performance analysis, and professional-grade insights.
 
 FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Headers: Use ### for major domains, #### for technical areas, ##### for specific implementations
@@ -431,19 +668,23 @@ FORMATTING REQUIREMENTS - Use these EXACT formats:
 • Math: Use \\( advanced notation \\) inline, \\[ complex derivations \\] for mathematical proofs
 
 IMPORTANT GUIDELINES:
+- Focus on state-of-the-art developments and cutting-edge research
+- Include performance metrics, scalability considerations, and implementation challenges
 - Tables should be reserved for detailed technical comparisons, research summaries, or parameter analysis
-- Emphasize cutting-edge research, implementation details, and professional insights
+- Emphasize practical implications for industry professionals
+- Discuss limitations, trade-offs, and future directions
 
 STRUCTURE your explanation with:
-### State-of-the-Art Overview
-### Technical Architecture
-### Advanced Methodologies
-### Research Frontiers
-### Industry Applications
-### Performance Analysis
-### Future Directions
+### 🚀 State-of-the-Art Overview
+### 🏗️ Technical Architecture
+### 🧠 Advanced Methodologies
+### 🔬 Research Frontiers
+### 🏢 Industry Applications
+### ⚡ Performance Analysis
+### 🎯 Implementation Challenges
+### 🔮 Future Directions
 
-Provide expert-level depth with cutting-edge insights."""
+Provide expert-level depth with cutting-edge insights for professional practitioners!"""
     }
     
     system_prompt = level_prompts.get(level.lower(), level_prompts["student"])
@@ -529,6 +770,11 @@ def explain_concept():
         if level.lower() not in valid_levels:
             return jsonify({'error': f'Invalid level. Must be one of: {", ".join(valid_levels)}'}), 400
         
+        # NEW: Server-side educational concept validation for security
+        validation_result = validate_educational_concept(topic)
+        if not validation_result['is_valid']:
+            return jsonify({'error': validation_result['error']}), 400
+        
         print(f"Request: topic='{topic}', level='{level}', API={'Google' if USE_GOOGLE_API else 'OpenRouter'}")
         
         # Check cache first (skip if force_refresh is True)
@@ -555,9 +801,21 @@ def explain_concept():
             print(f"AI explanation error: {error}")
             return jsonify({'error': error}), 500
         
-        # Save to cache (replace existing if force_refresh was used)
+        # NEW: Validate AI response to catch invalid topics that bypassed validation
+        is_valid_response = validate_ai_response(explanation, topic)
+        
+        if not is_valid_response:
+            # AI identified this as invalid (e.g., personal name) - don't save to cache or analytics
+            print(f"AI response validation failed for topic: {topic}")
+            return jsonify({
+                'error': 'This appears to be a personal name or non-educational topic. Please ask about educational concepts, scientific topics, or academic subjects instead.',
+                'ai_detected_invalid': True
+            }), 400
+        
+        # Only save to cache if AI response is valid educational content
         try:
             save_explanation(topic, level, explanation)
+            print(f"Valid educational content saved for topic: {topic}")
         except Exception as cache_error:
             print(f"Cache save error (non-fatal): {cache_error}")
             # Continue even if caching fails
@@ -629,6 +887,58 @@ def get_analytics():
         'cache_hit_rate': cache_hit_rate,
         'last_updated': datetime.now().isoformat()
     })
+
+@app.route('/delete-topic', methods=['DELETE'])
+def delete_topic():
+    """Delete a specific topic from history and cache"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        topic = data.get('topic', '').strip()
+        level = data.get('level', '').strip()
+        
+        if not topic:
+            return jsonify({'error': 'Topic is required'}), 400
+        
+        if not level:
+            return jsonify({'error': 'Level is required'}), 400
+        
+        conn = sqlite3.connect(DATABASE_PATH)
+        cursor = conn.cursor()
+        
+        # Normalize the topic for consistent deletion
+        normalized_topic = normalize_topic(topic)
+        
+        # Delete the specific topic and level combination
+        cursor.execute(
+            'DELETE FROM explanations WHERE topic = ? AND level = ?',
+            (normalized_topic, level.lower())
+        )
+        
+        deleted_count = cursor.rowcount
+        conn.commit()
+        conn.close()
+        
+        if deleted_count > 0:
+            print(f"Deleted topic: {normalized_topic}, level: {level}")
+            return jsonify({
+                'message': f'Successfully deleted "{topic}" at {level} level',
+                'deleted': True
+            })
+        else:
+            return jsonify({
+                'message': f'Topic "{topic}" at {level} level not found',
+                'deleted': False
+            }), 404
+        
+    except Exception as e:
+        print(f"Error deleting topic: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/suggestions', methods=['GET'])
 def get_suggestions():

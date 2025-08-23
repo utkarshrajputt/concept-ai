@@ -33,6 +33,7 @@ import {
   RotateCcw,
   Search,
   ChevronRight,
+  Trash2,
 } from "lucide-react";
 import {
   BarChart,
@@ -222,7 +223,7 @@ const recordRequest = (success = true) => {
   }
 };
 
-// Enhanced search validation
+// Enhanced search validation with educational concept filtering
 const validateSearchInput = (input) => {
   if (!input || typeof input !== "string") {
     return { isValid: false, error: "Please enter a topic to explain" };
@@ -265,7 +266,473 @@ const validateSearchInput = (input) => {
     return { isValid: false, error: "Invalid characters detected in topic" };
   }
 
+  // NEW: Check for educational concept validity
+  const educationalValidation = validateEducationalConcept(trimmed);
+  if (!educationalValidation.isValid) {
+    return {
+      isValid: false,
+      error: educationalValidation.error,
+      isBogus: true, // Flag for analytics tracking
+    };
+  }
+
   return { isValid: true, sanitized: trimmed };
+};
+
+// NEW: Educational concept validation function
+const validateEducationalConcept = (input) => {
+  const lowerInput = input.toLowerCase().trim();
+
+  // Comprehensive list of legitimate educational topics to always allow
+  const educationalConcepts = [
+    // Technology & Computer Science
+    "machine learning",
+    "artificial intelligence",
+    "deep learning",
+    "neural networks",
+    "computer vision",
+    "natural language processing",
+    "data science",
+    "big data",
+    "cloud computing",
+    "blockchain",
+    "virtual reality",
+    "augmented reality",
+    "internet of things",
+    "quantum computing",
+    "cyber security",
+    "software engineering",
+    "web development",
+    "mobile development",
+    "database management",
+    "user experience",
+    "user interface",
+    "information security",
+    "network security",
+
+    // Sciences
+    "quantum physics",
+    "organic chemistry",
+    "molecular biology",
+    "cell biology",
+    "genetic engineering",
+    "climate change",
+    "renewable energy",
+    "nuclear physics",
+    "astrophysics",
+    "marine biology",
+    "environmental science",
+    "forensic science",
+    "materials science",
+    "biomedical engineering",
+    "chemical engineering",
+    "electrical engineering",
+    "mechanical engineering",
+    "civil engineering",
+
+    // Mathematics
+    "linear algebra",
+    "differential equations",
+    "complex analysis",
+    "number theory",
+    "graph theory",
+    "game theory",
+    "probability theory",
+    "statistical analysis",
+    "mathematical modeling",
+
+    // Business & Economics
+    "supply chain",
+    "project management",
+    "financial markets",
+    "behavioral economics",
+    "digital marketing",
+    "business strategy",
+    "risk management",
+    "quality assurance",
+
+    // Medical & Health
+    "human anatomy",
+    "medical ethics",
+    "public health",
+    "mental health",
+    "physical therapy",
+    "pharmaceutical science",
+    "medical imaging",
+    "surgical procedures",
+    "preventive medicine",
+
+    // Other Academic Fields
+    "art history",
+    "world history",
+    "political science",
+    "social psychology",
+    "cognitive psychology",
+    "international relations",
+    "environmental law",
+    "constitutional law",
+    "educational psychology",
+  ];
+
+  // Check if it's a known educational concept
+  if (educationalConcepts.includes(lowerInput)) {
+    return { isValid: true };
+  }
+
+  // Check for obvious personal names (more specific patterns)
+  const personalNamePatterns = [
+    /^(mr|mrs|ms|dr|prof|professor)\.?\s+[a-z]+\s+[a-z]+$/i, // Titles + first + last name
+    /^[a-z]+\s+(smith|johnson|williams|brown|jones|garcia|miller|davis|rodriguez|martinez|hernandez|lopez|gonzalez|wilson|anderson|taylor|thomas|jackson|white|harris|martin|thompson|moore|young|allen|king|wright|scott|torres|nguyen|hill|flores|green|adams|nelson|baker|hall|rivera|campbell|mitchell|carter|roberts)$/i,
+  ];
+
+  // Comprehensive list of common first names to block (only when used alone or with common surnames)
+  const commonFirstNames = [
+    "john",
+    "jane",
+    "michael",
+    "sarah",
+    "david",
+    "mary",
+    "robert",
+    "jennifer",
+    "william",
+    "elizabeth",
+    "james",
+    "maria",
+    "christopher",
+    "susan",
+    "daniel",
+    "jessica",
+    "matthew",
+    "karen",
+    "anthony",
+    "nancy",
+    "mark",
+    "lisa",
+    "donald",
+    "betty",
+    "steven",
+    "helen",
+    "andrew",
+    "sandra",
+    "joshua",
+    "donna",
+    "utkarsh",
+    "raj",
+    "priya",
+    "amit",
+    "ravi",
+    "neha",
+    "rahul",
+    "pooja",
+    "vikram",
+    "anita",
+    "alex",
+    "chris",
+    "sam",
+    "pat",
+    "jordan",
+    "taylor",
+    "morgan",
+    "casey",
+    "riley",
+    "avery",
+  ];
+
+  // Check if input is just a common first name
+  if (commonFirstNames.includes(lowerInput)) {
+    return {
+      isValid: false,
+      error: `"${input}" appears to be a person's name. Please ask about educational topics like 'photosynthesis', 'machine learning', or 'quantum physics'.`,
+    };
+  }
+
+  // More specific check for personal names - only flag if it matches common name patterns
+  const wordsArr = lowerInput.split(/\s+/);
+  if (wordsArr.length === 2) {
+    const [firstWord, secondWord] = wordsArr;
+    // Only flag as personal name if first word is a common first name AND second word could be a surname
+    if (
+      commonFirstNames.includes(firstWord) &&
+      secondWord.length > 2 &&
+      !/^(learning|reality|physics|science|theory|analysis|study|research|engineering|computing|intelligence|processing|management|development|programming|biology|chemistry|mathematics|psychology|history|literature|philosophy|economics|politics|sociology|anthropology|geography|geology|astronomy|medicine|anatomy|physiology|neuroscience|genetics|ecology|botany|zoology|microbiology|biochemistry|biophysics|technology|robotics|automation|architecture|construction|agriculture|nutrition|education|pedagogy|linguistics|journalism|communication|media|design|fashion|music|theater|dance|sculpture|painting|photography|cinematography|animation|gaming|sports|exercise|fitness|wellness|mindfulness|meditation|spirituality|ethics|morality|justice|law|governance|policy|diplomacy|culture|heritage|tradition|folklore|mythology|religion|theology)$/.test(
+        secondWord
+      )
+    ) {
+      return {
+        isValid: false,
+        error:
+          "This looks like a person's name. Try asking about educational concepts, scientific topics, or academic subjects instead.",
+      };
+    }
+  }
+
+  // Check for other personal name patterns
+  if (personalNamePatterns.some((pattern) => pattern.test(input))) {
+    // Check if it might be a famous scientist/historical figure
+    const famousEducationalFigures = [
+      "albert einstein",
+      "isaac newton",
+      "marie curie",
+      "charles darwin",
+      "galileo galilei",
+      "stephen hawking",
+      "nikola tesla",
+      "ada lovelace",
+      "alan turing",
+      "richard feynman",
+      "neil degrasse tyson",
+      "carl sagan",
+      "jane goodall",
+      "benjamin franklin",
+      "leonardo da vinci",
+      "aristotle",
+      "plato",
+      "socrates",
+      "archimedes",
+      "pythagoras",
+      "euclid",
+    ];
+
+    if (!famousEducationalFigures.includes(lowerInput)) {
+      return {
+        isValid: false,
+        error:
+          "This looks like a person's name. Try asking about educational concepts, scientific topics, or academic subjects instead.",
+      };
+    }
+  }
+
+  // Check for vague/generic questions that aren't educational concepts
+  const vagueQuestions = [
+    "what",
+    "why",
+    "how",
+    "when",
+    "where",
+    "who",
+    "which",
+    "tell me",
+    "explain",
+    "help",
+    "anything",
+    "something",
+    "nothing",
+    "everything",
+    "whatever",
+    "stuff",
+    "things",
+  ];
+
+  if (vagueQuestions.includes(lowerInput)) {
+    return {
+      isValid: false,
+      error: `Please be more specific. Instead of "${input}", try asking about a particular concept like 'photosynthesis', 'calculus', or 'machine learning'.`,
+    };
+  }
+
+  // Check for non-educational content
+  const nonEducationalPatterns = [
+    /^(hey|hi|hello|what's up|how are you|good morning|good evening)/i, // Greetings
+    /^(tell me about yourself|who are you|what can you do|what is this)/i, // Personal questions
+    /(gossip|celebrity|entertainment|movie star|pop star|influencer)/i, // Entertainment
+    /(dating|relationship|romance|love|crush|boyfriend|girlfriend)/i, // Personal relationships
+    /(restaurant|food recipe|cooking|menu|pizza|burger)/i, // Food (unless educational)
+    /(shopping|buying|purchase|sale|discount|price)/i, // Commerce
+    /(weather|forecast|temperature today|rain|sunny)/i, // Weather
+    /(sports score|game result|match result|football|basketball)/i, // Sports scores
+    /(news|current events|politics today|election|vote)/i, // Current events
+    /(test|testing|check|random|trial)/i, // Test inputs
+  ];
+
+  if (nonEducationalPatterns.some((pattern) => pattern.test(input))) {
+    return {
+      isValid: false,
+      error:
+        "I focus on educational and technical concepts. Try asking about science, technology, mathematics, history, or academic subjects.",
+    };
+  }
+
+  // Check for questions that are too short or meaningless
+  if (lowerInput.length < 3) {
+    return {
+      isValid: false,
+      error:
+        "Please enter a more specific educational topic (at least 3 characters).",
+    };
+  }
+
+  // Check for single common words that aren't educational
+  const words = lowerInput.split(/\s+/);
+  if (words.length === 1) {
+    const nonEducationalSingleWords = [
+      "hello",
+      "hi",
+      "hey",
+      "test",
+      "testing",
+      "random",
+      "whatever",
+      "anything",
+      "something",
+      "nothing",
+      "help",
+      "ok",
+      "okay",
+      "yes",
+      "no",
+      "maybe",
+      "sure",
+      "fine",
+      "good",
+      "bad",
+      "cool",
+      "nice",
+      "wow",
+      "hmm",
+      "uh",
+      "um",
+      "err",
+      "well",
+      "so",
+      "but",
+      "and",
+      "or",
+    ];
+
+    if (nonEducationalSingleWords.includes(words[0])) {
+      return {
+        isValid: false,
+        error:
+          "Please enter a specific educational topic like 'photosynthesis', 'machine learning', or 'quantum physics'.",
+      };
+    }
+  }
+
+  // Check for educational indicators (allow these through)
+  const educationalKeywords = [
+    "theory",
+    "principle",
+    "concept",
+    "algorithm",
+    "equation",
+    "formula",
+    "law",
+    "theorem",
+    "process",
+    "method",
+    "technique",
+    "analysis",
+    "synthesis",
+    "research",
+    "study",
+    "learning",
+    "science",
+    "math",
+    "physics",
+    "chemistry",
+    "biology",
+    "history",
+    "geography",
+    "literature",
+    "programming",
+    "coding",
+    "computer",
+    "technology",
+    "engineering",
+    "medicine",
+    "anatomy",
+  ];
+
+  const hasEducationalKeyword = educationalKeywords.some((keyword) =>
+    lowerInput.includes(keyword)
+  );
+
+  // If it has educational keywords, it's probably valid
+  if (hasEducationalKeyword) {
+    return { isValid: true };
+  }
+
+  // Check for random character sequences (like "asdfasfdsfdsfdsfdfdsfdsfdsds")
+  const isRandomSequence = (text) => {
+    // Check for repeated character patterns
+    if (/(.)\1{4,}/.test(text)) return true; // 5+ consecutive same chars
+    
+    // Check for keyboard patterns (common random typing)
+    const keyboardPatterns = [
+      /asdf/i, /qwer/i, /zxcv/i, /hjkl/i, /uiop/i, /bnm/i,
+      /fdsa/i, /rewq/i, /vcxz/i, /lkjh/i, /poiu/i, /mnb/i,
+      /sdfg/i, /dfgh/i, /fghj/i, /ghjk/i, /hjkl/i,
+      /wasd/i, /sadf/i, /dfghjkl/i, /qwertyuiop/i
+    ];
+    
+    if (keyboardPatterns.some(pattern => pattern.test(text))) return true;
+    
+    // Check for lack of vowels in long strings (random consonant sequences)
+    if (text.length > 10 && !/[aeiou]/i.test(text)) return true;
+    
+    // Check for excessive alternating patterns
+    if (/^[a-z]{2,}([a-z])\1+$/i.test(text)) return true;
+    
+    // Check ratio of unique characters to total length
+    const uniqueChars = new Set(text.toLowerCase()).size;
+    const ratio = uniqueChars / text.length;
+    
+    // If less than 30% unique characters and string is long, likely random
+    if (text.length > 15 && ratio < 0.3) return true;
+    
+    return false;
+  };
+
+  // Block random sequences
+  if (isRandomSequence(lowerInput)) {
+    return {
+      isValid: false,
+      error: 'Please enter a valid educational topic instead of random characters. Try concepts like "machine learning", "photosynthesis", or "quantum physics".'
+    };
+  }
+
+  // For remaining inputs, check if they look like legitimate concepts
+  // Allow inputs that are:
+  // 1. Multiple words (likely compound concepts) - but only if they're not random
+  // 2. Single words that are longer than common names but not too long
+  // 3. Words with technical/scientific suffixes
+  const technicalSuffixes = [
+    "ism",
+    "ology",
+    "tion",
+    "sion",
+    "ment",
+    "ness",
+    "ics",
+    "ing",
+  ];
+  const hasTechnicalSuffix = technicalSuffixes.some((suffix) =>
+    lowerInput.endsWith(suffix)
+  );
+
+  // More restrictive validation: only allow through if it has multiple words OR technical suffix
+  // Single long words without technical suffixes are more likely to be random
+  if (words.length > 1 || hasTechnicalSuffix) {
+    return { isValid: true };
+  }
+
+  // For single words, be more restrictive - only allow if reasonable length and not random-looking
+  if (words.length === 1 && lowerInput.length >= 3 && lowerInput.length <= 20) {
+    // Additional checks for single words
+    const hasVowels = /[aeiou]/i.test(lowerInput);
+    const hasConsonants = /[bcdfghjklmnpqrstvwxyz]/i.test(lowerInput);
+    
+    if (hasVowels && hasConsonants) {
+      return { isValid: true };
+    }
+  }
+
+  // Final fallback - if we're not sure, suggest being more specific
+  return {
+    isValid: false,
+    error: `"${input}" might be too vague. Please be more specific about the educational concept you'd like to learn about.`,
+  };
 };
 
 // Enhanced fuzzy matching for better cache hits
@@ -1104,7 +1571,8 @@ const useKeyboardShortcuts = (callbacks) => {
       const { ctrlKey, metaKey, key } = event;
       const isModifierPressed = ctrlKey || metaKey;
 
-      if (isModifierPressed && key === "Enter" && callbacks.submit) {
+      // Changed from Ctrl+Enter to just Enter for better UX
+      if (key === "Enter" && callbacks.submit) {
         event.preventDefault();
         callbacks.submit();
       } else if (key === "Escape" && callbacks.escape) {
@@ -1657,14 +2125,54 @@ function App() {
     setLevel(newLevel);
   };
 
-  // Enhanced error handling with retry mechanism, rate limiting, and exponential backoff
+  // Delete specific history item
+  const deleteHistoryItem = async (item) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/delete-topic`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: item.topic,
+          level: item.level
+        })
+      });
+
+      if (response.ok) {
+        // Remove from local history
+        const updatedHistory = localHistory.filter(historyItem => 
+          !(historyItem.topic === item.topic && historyItem.level === item.level)
+        );
+        setLocalHistory(updatedHistory);
+        localStorage.setItem('explanationHistory', JSON.stringify(updatedHistory));
+        
+        // Show success message
+        alert(`Successfully deleted "${item.topic}" from history`);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to delete: ${errorData.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting history item:', error);
+      alert('Failed to delete item. Please try again.');
+    }
+  };
+
+  // Enhanced error handling with retry mechanism, rate limiting, and educational concept validation
   const handleSubmit = async (e, forceRefresh = false) => {
     if (e) e.preventDefault();
 
-    // Enhanced input validation
+    // Enhanced input validation with educational concept checking
     const validation = validateSearchInput(topic);
     if (!validation.isValid) {
       setError(validation.error);
+
+      // Don't count bogus requests in rate limiting or analytics
+      if (validation.isBogus) {
+        console.log("Blocked non-educational request:", topic);
+        return; // Exit early, don't process further
+      }
       return;
     }
 
@@ -1794,7 +2302,7 @@ function App() {
         setCached(data.cached || false);
         setRegenerated(forceRefresh);
 
-        // Save to local history with enhanced metadata
+        // Save to local history with enhanced metadata (only for valid educational concepts)
         const historyItem = {
           id: Date.now(),
           topic: sanitizedTopic,
@@ -1804,6 +2312,7 @@ function App() {
           cached: data.cached || false,
           responseTime: data.responseTime || null,
           tokenCount: data.tokenCount || null,
+          validEducationalConcept: true, // Mark as valid educational content
         };
 
         setLocalHistory((prev) => {
@@ -1978,6 +2487,63 @@ function App() {
     showShortcuts,
     showPDFPreview,
   ]);
+
+  // Mobile Keyboard Handling for Better UX
+  useEffect(() => {
+    let initialViewportHeight = window.innerHeight;
+
+    const handleResize = () => {
+      const currentHeight = window.innerHeight;
+      const heightDifference = initialViewportHeight - currentHeight;
+
+      // If the height difference is significant (> 150px), assume keyboard is open
+      if (heightDifference > 150) {
+        // Keyboard is likely open - add class to handle input positioning
+        document.body.classList.add("keyboard-open");
+
+        // For iOS Safari, scroll to input when keyboard opens
+        const activeElement = document.activeElement;
+        if (activeElement && activeElement.tagName === "INPUT") {
+          setTimeout(() => {
+            activeElement.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+              inline: "nearest",
+            });
+          }, 100);
+        }
+      } else {
+        // Keyboard is likely closed
+        document.body.classList.remove("keyboard-open");
+      }
+    };
+
+    const handleFocusIn = (e) => {
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+        // Small delay to let the keyboard animation complete
+        setTimeout(() => {
+          e.target.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
+          });
+        }, 300);
+      }
+    };
+
+    // Listen for viewport changes (keyboard open/close)
+    window.addEventListener("resize", handleResize);
+    document.addEventListener("focusin", handleFocusIn);
+
+    // Initial height measurement
+    initialViewportHeight = window.innerHeight;
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      document.removeEventListener("focusin", handleFocusIn);
+      document.body.classList.remove("keyboard-open");
+    };
+  }, []);
 
   // Enhanced regeneration function with confirmation dialog
   const handleRegenerate = () => {
@@ -2288,12 +2854,17 @@ function App() {
       };
     }
 
-    // Calculate analytics from local history
+    // Calculate analytics from local history (only valid educational concepts)
     const topics = {};
     const levels = {};
     let cached = 0;
 
-    localHistory.forEach((item) => {
+    // Filter for valid educational concepts only
+    const validHistory = localHistory.filter(
+      (item) => item.validEducationalConcept !== false // Include items without the flag (backward compatibility) and those marked as true
+    );
+
+    validHistory.forEach((item) => {
       // Count topics
       if (topics[item.topic]) {
         topics[item.topic]++;
@@ -2322,14 +2893,14 @@ function App() {
       count,
     }));
 
-    // Generate recent activity (last 7 days)
+    // Generate recent activity (last 7 days) - only valid educational concepts
     const recent_activity = [];
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split("T")[0];
 
-      const dayCount = localHistory.filter(
+      const dayCount = validHistory.filter(
         (item) => item.timestamp && item.timestamp.split("T")[0] === dateStr
       ).length;
 
@@ -2340,12 +2911,12 @@ function App() {
     }
 
     return {
-      total_explanations: localHistory.length,
+      total_explanations: validHistory.length,
       popular_topics,
       level_distribution,
       cache_hit_rate:
-        localHistory.length > 0
-          ? Math.round((cached / localHistory.length) * 100)
+        validHistory.length > 0
+          ? Math.round((cached / validHistory.length) * 100)
           : 0,
       recent_activity,
       last_updated: new Date().toISOString(),
@@ -2677,7 +3248,7 @@ function App() {
             </button>
 
             {/* Topic Input with Suggestions - More compact */}
-            <div className="space-y-2 lg:space-y-3">
+            {/* <div className="space-y-2 lg:space-y-3">
               <label
                 className={`block text-sm font-medium ${
                   darkMode ? "text-gray-300" : "text-gray-700"
@@ -2706,10 +3277,10 @@ function App() {
                   }`}
                   disabled={loading}
                 />
-                <Sparkles className="absolute right-4 top-3.5 w-4 h-4 text-blue-500 pointer-events-none" />
+                <Sparkles className="absolute right-4 top-3.5 w-4 h-4 text-blue-500 pointer-events-none" /> */}
 
-                {/* Modern Suggestions Dropdown */}
-                {showSuggestions && suggestions.length > 0 && (
+            {/* Modern Suggestions Dropdown */}
+            {/* {showSuggestions && suggestions.length > 0 && (
                   <div
                     className={`absolute z-20 w-full mt-2 border rounded-xl shadow-lg max-h-64 overflow-y-auto ${
                       darkMode
@@ -2740,9 +3311,9 @@ function App() {
                             ? "text-gray-300"
                             : "text-gray-700"
                         }`}
-                      >
-                        {/* Simple Level Icon */}
-                        <div
+                      > */}
+            {/* Simple Level Icon */}
+            {/* <div
                           className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${
                             suggestion.level === level
                               ? darkMode
@@ -2772,10 +3343,10 @@ function App() {
                                 }`,
                               }
                             )}
-                        </div>
+                        </div> */}
 
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
+            {/* Content */}
+            {/* <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2">
                             <span className="capitalize truncate font-medium">
                               {suggestion.topic}
@@ -2849,10 +3420,10 @@ function App() {
                               </>
                             )}
                           </div>
-                        </div>
+                        </div> */}
 
-                        {/* Arrow Indicator */}
-                        <div
+            {/* Arrow Indicator */}
+            {/* <div
                           className={`transition-transform duration-200 ${
                             index === selectedSuggestionIndex
                               ? "transform translate-x-1"
@@ -2872,10 +3443,10 @@ function App() {
                           />
                         </div>
                       </button>
-                    ))}
+                    ))} */}
 
-                    {/* Keyboard Hint */}
-                    <div
+            {/* Keyboard Hint */}
+            {/* <div
                       className={`px-4 py-2 text-xs border-t ${
                         darkMode
                           ? "text-gray-500 bg-gray-800/50 border-gray-600"
@@ -2902,7 +3473,7 @@ function App() {
                   </div>
                 )}
               </div>
-            </div>
+            </div> */}
 
             {/* Modern Difficulty Levels */}
             <div className="space-y-2 lg:space-y-3">
@@ -3121,39 +3692,6 @@ function App() {
               </div>
             </div>
 
-            {/* Generate Button - Desktop: normal, Mobile: moved to sticky bottom */}
-            <div className="hidden lg:block">
-              <button
-                onClick={handleSubmit}
-                disabled={loading || !topic.trim()}
-                className={`w-full py-2.5 sm:py-3 px-4 rounded-lg font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center space-x-2 ${
-                  !topic.trim()
-                    ? "bg-gray-400 cursor-not-allowed text-white scale-100"
-                    : "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700 hover:scale-105 hover:shadow-purple-500/25 active:scale-95"
-                } ${
-                  loading
-                    ? "opacity-50 cursor-not-allowed animate-pulse"
-                    : "hover:brightness-110"
-                }`}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Generating...</span>
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-4 h-4" />
-                    <span>
-                      {!topic.trim()
-                        ? "Enter a topic first"
-                        : "Generate Explanation"}
-                    </span>
-                  </>
-                )}
-              </button>
-            </div>
-
             {/* Modern Recent Topics Section - Desktop Only */}
             {localHistory.length > 0 && (
               <div
@@ -3270,25 +3808,25 @@ function App() {
               </div>
             )}
 
-            {/* Enhanced Action Cards - Compact on mobile */}
+            {/* Enhanced Action Cards - More Compact on mobile */}
             <div
-              className={`pt-2 lg:pt-4 border-t ${
+              className={`pt-1 lg:pt-4 border-t ${
                 darkMode ? "border-gray-700" : "border-gray-200"
               }`}
             >
-              <div className="grid grid-cols-2 gap-2 lg:gap-3">
+              <div className="grid grid-cols-2 gap-1.5 lg:gap-3">
                 {/* Enhanced Progress Card */}
                 <button
                   onClick={() => setShowStatsModal(true)}
-                  className={`group p-2 lg:p-4 rounded-lg lg:rounded-xl border transition-all duration-200 text-left hover:shadow-lg hover:-translate-y-0.5 ${
+                  className={`group p-1.5 lg:p-4 rounded-lg lg:rounded-xl border transition-all duration-200 text-left hover:shadow-lg hover:-translate-y-0.5 ${
                     darkMode
                       ? "bg-green-900/20 border-green-800/50 hover:border-green-600/50 text-gray-200"
                       : "bg-green-50 border-green-200/50 hover:border-green-300/50 text-gray-700"
                   }`}
                 >
-                  <div className="flex items-center space-x-1 lg:space-x-2 mb-1 lg:mb-3">
+                  <div className="flex items-center space-x-1 lg:space-x-2 mb-0.5 lg:mb-3">
                     <div
-                      className={`p-1 lg:p-2 rounded-md lg:rounded-lg ${
+                      className={`p-0.5 lg:p-2 rounded-md lg:rounded-lg ${
                         darkMode ? "bg-green-500/20" : "bg-green-500/10"
                       }`}
                     >
@@ -3303,13 +3841,13 @@ function App() {
                     </span>
                   </div>
                   <div
-                    className={`text-[10px] lg:text-xs ${
+                    className={`text-[9px] lg:text-xs ${
                       darkMode ? "text-gray-400" : "text-gray-500"
                     }`}
                   >
                     {localHistory.length} topics
                   </div>
-                  <div className="mt-1 lg:mt-2 h-0.5 lg:h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className="mt-0.5 lg:mt-2 h-0.5 lg:h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-green-500 rounded-full transition-all duration-500"
                       style={{
@@ -3325,15 +3863,15 @@ function App() {
                 {/* Enhanced Recent Card */}
                 <button
                   onClick={() => setShowHistory(true)}
-                  className={`group p-2 lg:p-4 rounded-lg lg:rounded-xl border transition-all duration-200 text-left hover:shadow-lg hover:-translate-y-0.5 ${
+                  className={`group p-1.5 lg:p-4 rounded-lg lg:rounded-xl border transition-all duration-200 text-left hover:shadow-lg hover:-translate-y-0.5 ${
                     darkMode
                       ? "bg-blue-900/20 border-blue-800/50 hover:border-blue-600/50 text-gray-200"
                       : "bg-blue-50 border-blue-200/50 hover:border-blue-300/50 text-gray-700"
                   }`}
                 >
-                  <div className="flex items-center space-x-1 lg:space-x-2 mb-1 lg:mb-3">
+                  <div className="flex items-center space-x-1 lg:space-x-2 mb-0.5 lg:mb-3">
                     <div
-                      className={`p-1 lg:p-2 rounded-md lg:rounded-lg ${
+                      className={`p-0.5 lg:p-2 rounded-md lg:rounded-lg ${
                         darkMode ? "bg-blue-500/20" : "bg-blue-500/10"
                       }`}
                     >
@@ -3348,14 +3886,14 @@ function App() {
                     </span>
                   </div>
                   <div
-                    className={`text-[10px] lg:text-xs ${
+                    className={`text-[9px] lg:text-xs ${
                       darkMode ? "text-gray-400" : "text-gray-500"
                     }`}
                   >
                     View history
                   </div>
                   {localHistory.length > 0 && (
-                    <div className="flex -space-x-1 mt-1 lg:mt-2">
+                    <div className="flex -space-x-1 mt-0.5 lg:mt-2">
                       {localHistory.slice(0, 3).map((_, i) => (
                         <div
                           key={i}
@@ -3375,7 +3913,7 @@ function App() {
         </div>
 
         {/* Mobile Sticky Bottom Bar - Responsive to keyboard */}
-        <div
+        {/* <div
           className={`lg:hidden fixed bottom-0 left-0 right-0 backdrop-blur-lg border-t z-50 transition-all duration-300 ${
             darkMode
               ? "bg-gray-900/95 border-gray-700/50"
@@ -3429,7 +3967,7 @@ function App() {
               </button>
             )}
           </div>
-        </div>
+        </div> */}
 
         {/* Right Content Area */}
         <div className="flex-1 flex flex-col min-h-0">
@@ -3477,78 +4015,157 @@ function App() {
             </div>
           </div>
 
-          {/* Main Content Body - Improved mobile positioning */}
-          <div className="flex-1 overflow-y-auto p-3 lg:p-4 lg:sm:p-6 pb-20 lg:pb-4 lg:sm:pb-6 pt-4 lg:pt-3">
+          {/* Main Content Body - Improved mobile positioning with floating input */}
+          <div className="flex-1 overflow-y-auto relative p-3 lg:p-4 lg:sm:p-6 pb-32 pt-4 lg:pt-3">
             {error && (
               <div
-                className={`mb-4 sm:mb-6 p-6 rounded-lg sm:rounded-xl border transition-colors duration-300 ${
+                className={`mb-4 sm:mb-6 relative overflow-hidden transition-all duration-500 ease-out transform ${
                   darkMode
-                    ? "bg-red-900/30 border-red-800/50 text-red-200"
-                    : "bg-red-50 border-red-200"
+                    ? "bg-gradient-to-br from-red-900/20 via-red-800/10 to-pink-900/20"
+                    : "bg-gradient-to-br from-red-50 via-rose-50 to-pink-50"
+                } backdrop-blur-sm rounded-2xl border ${
+                  darkMode
+                    ? "border-red-800/30 shadow-lg shadow-red-900/20"
+                    : "border-red-200/60 shadow-lg shadow-red-100/40"
                 }`}
               >
-                <div className="flex items-start space-x-3">
-                  <AlertCircle
-                    className={`w-6 h-6 flex-shrink-0 mt-0.5 ${
-                      darkMode ? "text-red-400" : "text-red-500"
-                    }`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3
-                      className={`font-semibold ${
-                        darkMode ? "text-red-300" : "text-red-800"
-                      }`}
+                {/* Animated background pattern */}
+                <div
+                  className={`absolute inset-0 opacity-5 ${
+                    darkMode ? "bg-red-400" : "bg-red-600"
+                  }`}
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='3' cy='3' r='1'/%3E%3Ccircle cx='13' cy='13' r='1'/%3E%3C/g%3E%3C/svg%3E")`,
+                  }}
+                />
+
+                <div className="relative z-10 p-6">
+                  <div className="flex items-start space-x-4">
+                    {/* Modern icon with animated glow */}
+                    <div
+                      className={`relative flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center ${
+                        darkMode
+                          ? "bg-red-800/30 text-red-300"
+                          : "bg-red-100 text-red-600"
+                      } shadow-lg`}
                     >
-                      Oops! Something went wrong
-                    </h3>
-                    <p
-                      className={`text-sm mt-1 break-words ${
-                        darkMode ? "text-red-400" : "text-red-700"
-                      }`}
-                    >
-                      {error}
-                    </p>
-                    {retryCount < 3 && (
-                      <div className="mt-4 flex items-center space-x-3">
-                        <button
-                          onClick={handleRetry}
-                          className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      <AlertCircle className="w-6 h-6" />
+                      <div
+                        className={`absolute inset-0 rounded-xl animate-pulse ${
+                          darkMode ? "bg-red-400/10" : "bg-red-300/20"
+                        }`}
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      {/* Dynamic title based on error type */}
+                      <h3
+                        className={`text-lg font-bold mb-2 ${
+                          darkMode ? "text-red-200" : "text-red-900"
+                        }`}
+                      >
+                        {error.includes("person's name") ||
+                        error.includes("educational concept")
+                          ? "🎓 Let's Focus on Learning!"
+                          : error.includes("wait") || error.includes("requests")
+                          ? "⏱️ Please Slow Down"
+                          : error.includes("connection") ||
+                            error.includes("network")
+                          ? "🌐 Connection Issue"
+                          : "⚠️ Something Went Wrong"}
+                      </h3>
+
+                      {/* Error message with better typography */}
+                      <div
+                        className={`text-sm leading-relaxed mb-4 ${
+                          darkMode ? "text-red-100" : "text-red-800"
+                        }`}
+                      >
+                        {/* Custom styling for educational guidance */}
+                        {error.includes("educational concept") ? (
+                          <div className="space-y-2">
+                            <p className="font-medium">{error}</p>
+                            <div
+                              className={`text-xs p-3 rounded-lg ${
+                                darkMode
+                                  ? "bg-red-800/20 text-red-200"
+                                  : "bg-red-100/50 text-red-700"
+                              }`}
+                            >
+                              💡 <strong>Try these examples:</strong> "machine
+                              learning", "photosynthesis", "quantum physics",
+                              "calculus"
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="break-words">{error}</p>
+                        )}
+                      </div>
+
+                      {/* Action buttons with modern styling */}
+                      {retryCount < 3 &&
+                        !error.includes("educational concept") &&
+                        !error.includes("person's name") && (
+                          <div className="flex items-center space-x-3">
+                            <button
+                              onClick={handleRetry}
+                              className={`group relative overflow-hidden px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
+                                darkMode
+                                  ? "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white shadow-lg shadow-red-900/30"
+                                  : "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white shadow-lg shadow-red-500/30"
+                              }`}
+                            >
+                              <div className="relative z-10 flex items-center space-x-2">
+                                <RefreshCw className="w-4 h-4" />
+                                <span>Try Again ({3 - retryCount} left)</span>
+                              </div>
+                              <div className="absolute inset-0 bg-white/20 transform translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
+                            </button>
+
+                            <div
+                              className={`flex items-center space-x-2 text-xs ${
+                                darkMode ? "text-red-300" : "text-red-600"
+                              }`}
+                            >
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  darkMode ? "bg-red-400" : "bg-red-500"
+                                } animate-pulse`}
+                              />
+                              <span>Attempt #{retryCount + 1}/3</span>
+                            </div>
+                          </div>
+                        )}
+
+                      {/* Enhanced help section for max retries */}
+                      {retryCount >= 3 && (
+                        <div
+                          className={`mt-4 p-4 rounded-xl border-2 border-dashed ${
                             darkMode
-                              ? "bg-red-800 hover:bg-red-700 text-red-200"
-                              : "bg-red-600 hover:bg-red-700 text-white"
+                              ? "border-red-700/50 bg-red-900/20 text-red-200"
+                              : "border-red-300/50 bg-red-50 text-red-800"
                           }`}
                         >
-                          <RefreshCw className="w-4 h-4" />
-                          <span>
-                            Try Again ({3 - retryCount} attempts left)
-                          </span>
-                        </button>
-                        <span
-                          className={`text-xs ${
-                            darkMode ? "text-red-400" : "text-red-600"
-                          }`}
-                        >
-                          Attempt #{retryCount + 1}/3
-                        </span>
-                      </div>
-                    )}
-                    {retryCount >= 3 && (
-                      <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                        <p
-                          className={`text-xs ${
-                            darkMode ? "text-gray-300" : "text-gray-600"
-                          }`}
-                        >
-                          Maximum retry attempts reached. Please check your
-                          connection and try a different topic.
-                        </p>
-                      </div>
-                    )}
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className="text-lg">🤔</span>
+                            <span className="font-semibold">
+                              Still having trouble?
+                            </span>
+                          </div>
+                          <ul className="text-sm space-y-1 ml-6">
+                            <li>• Check your internet connection</li>
+                            <li>• Try a different educational topic</li>
+                            <li>• Refresh the page and try again</li>
+                          </ul>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
+            {/* Welcome message and suggestions for new users */}
             {!explanation && !loading && !error && (
               <div className="flex items-start justify-center min-h-[200px] sm:min-h-[300px] pt-8">
                 <div className="text-center max-w-md mx-auto px-4">
@@ -3753,66 +4370,68 @@ function App() {
                   }`}
                 >
                   <div
-                    className={`explanation-header p-6 border-b ${
+                    className={`explanation-header p-3 sm:p-6 border-b ${
                       darkMode
                         ? "bg-gradient-to-r from-gray-800/80 via-gray-700/80 to-gray-800/80 border-gray-700/40"
                         : "bg-gradient-to-r from-indigo-50 via-purple-50 to-blue-50 border-white/40"
                     }`}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-                      <div className="flex items-center space-x-4">
-                        <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
-                          <BookOpen className="w-6 h-6 text-white" />
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                      <div className="flex items-center space-x-2 sm:space-x-4">
+                        <div className="p-2 sm:p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl shadow-lg">
+                          <BookOpen className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                         </div>
                         <div>
                           <h3
-                            className={`font-bold text-lg ${
+                            className={`font-bold text-base sm:text-lg ${
                               darkMode ? "text-gray-100" : "text-gray-900"
                             }`}
                           >
                             Explanation
                           </h3>
-                          <div className="flex items-center space-x-3 mt-1">
+                          <div className="flex items-center space-x-2 sm:space-x-3 mt-0.5 sm:mt-1">
                             {cached && (
                               <span
-                                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
+                                className={`inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium border ${
                                   darkMode
                                     ? "bg-green-900/50 text-green-400 border-green-800/50"
                                     : "bg-green-100 text-green-800 border-green-200"
                                 }`}
                               >
-                                <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-                                Cached Result
+                                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full mr-1 sm:mr-2 animate-pulse"></div>
+                                <span className="hidden sm:inline">Cached Result</span>
+                                <span className="sm:hidden">Cached</span>
                               </span>
                             )}
                             {regenerated && (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                                <Zap className="w-3 h-3 mr-1" />
-                                Fresh Content
+                              <span className="inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-1" />
+                                <span className="hidden sm:inline">Fresh Content</span>
+                                <span className="sm:hidden">Fresh</span>
                               </span>
                             )}
-                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 sm:py-1 rounded-full">
                               {
                                 DIFFICULTY_LEVELS.find((l) => l.value === level)
                                   ?.label
                               }{" "}
-                              Level
+                              <span className="hidden sm:inline">Level</span>
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-2 self-start lg:self-auto">
-                        {/* Top Row - Reading Controls */}
-                        <div className="flex items-center gap-2 order-1 lg:order-none">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 self-start sm:self-auto">
+                        {/* Top Row - Reading Controls - Compact on Mobile */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 order-1 sm:order-none">
                           {/* Reading Time Estimate */}
                           <div
-                            className={`flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+                            className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-medium ${
                               darkMode
                                 ? "bg-gray-700/70 text-gray-300"
                                 : "bg-gray-100 text-gray-600"
                             }`}
                           >
-                            <Clock className="w-3 h-3" />
+                            <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                             <span>
                               {Math.max(
                                 1,
@@ -3834,7 +4453,7 @@ function App() {
                               onClick={() =>
                                 setFontSize(Math.max(14, fontSize - 2))
                               }
-                              className={`p-1.5 rounded-l-lg transition-colors ${
+                              className={`p-1 sm:p-1.5 rounded-l-lg transition-colors ${
                                 darkMode
                                   ? "hover:bg-gray-600 text-gray-300"
                                   : "hover:bg-gray-200 text-gray-600"
@@ -3844,7 +4463,7 @@ function App() {
                               <span className="text-xs font-bold">A-</span>
                             </button>
                             <div
-                              className={`px-2 py-1.5 text-xs ${
+                              className={`px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs ${
                                 darkMode ? "text-gray-300" : "text-gray-600"
                               }`}
                             >
@@ -3854,7 +4473,7 @@ function App() {
                               onClick={() =>
                                 setFontSize(Math.min(24, fontSize + 2))
                               }
-                              className={`p-1.5 rounded-r-lg transition-colors ${
+                              className={`p-1 sm:p-1.5 rounded-r-lg transition-colors ${
                                 darkMode
                                   ? "hover:bg-gray-600 text-gray-300"
                                   : "hover:bg-gray-200 text-gray-600"
@@ -3866,14 +4485,14 @@ function App() {
                           </div>
                         </div>
 
-                        {/* Bottom Row - Action Buttons */}
-                        <div className="flex flex-wrap items-center gap-2 order-2 lg:order-none">
+                        {/* Bottom Row - Action Buttons - More Compact on Mobile */}
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 order-2 sm:order-none">
                           {/* Regenerate Button - Blue theme with RefreshCw icon */}
                           <button
                             onClick={handleRegenerate}
                             disabled={regenerating || loading}
                             title="Generate a fresh explanation and replace the cached version"
-                            className={`flex items-center space-x-1.5 lg:space-x-2 px-2.5 lg:px-3 xl:px-4 py-2 rounded-xl text-xs lg:text-sm font-medium transition-all duration-200 shadow-sm ${
+                            className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 lg:px-3 xl:px-4 py-1.5 sm:py-2 rounded-xl text-xs lg:text-sm font-medium transition-all duration-200 shadow-sm ${
                               regenerating
                                 ? "bg-blue-50 text-blue-400 cursor-not-allowed"
                                 : "bg-blue-500 text-white hover:bg-blue-600 hover:shadow-lg transform hover:-translate-y-0.5"
@@ -3890,7 +4509,8 @@ function App() {
                             ) : (
                               <>
                                 <RefreshCw className="w-3 h-3 lg:w-4 lg:h-4" />
-                                <span>Regenerate</span>
+                                <span className="hidden sm:inline">Regenerate</span>
+                                <span className="sm:hidden">New</span>
                               </>
                             )}
                           </button>
@@ -3906,7 +4526,7 @@ function App() {
                             }}
                             disabled={exportLoading}
                             className={`
-                            flex items-center space-x-1.5 lg:space-x-2 px-2.5 lg:px-3 xl:px-4 py-2 rounded-xl text-xs lg:text-sm font-medium transition-all duration-200 shadow-sm transform
+                            flex items-center space-x-1 sm:space-x-1.5 lg:space-x-2 px-2 sm:px-2.5 lg:px-3 xl:px-4 py-1.5 sm:py-2 rounded-xl text-xs lg:text-sm font-medium transition-all duration-200 shadow-sm transform
                             ${
                               exportLoading
                                 ? "bg-purple-300 text-purple-100 cursor-not-allowed"
@@ -3965,7 +4585,7 @@ function App() {
                           {/* Copy Button - Green when success, gray when normal */}
                           <button
                             onClick={copyToClipboard}
-                            className={`flex items-center space-x-1.5 lg:space-x-2 px-2.5 lg:px-3 xl:px-4 py-2 rounded-xl text-xs lg:text-sm font-medium transition-all duration-300 shadow-sm transform ${
+                            className={`flex items-center space-x-1 sm:space-x-1.5 lg:space-x-2 px-2 sm:px-2.5 lg:px-3 xl:px-4 py-1.5 sm:py-2 rounded-xl text-xs lg:text-sm font-medium transition-all duration-300 shadow-sm transform ${
                               copySuccess
                                 ? "bg-green-500 text-white shadow-lg scale-105 animate-bounce"
                                 : "bg-gray-500 text-white hover:bg-gray-600 hover:shadow-xl hover:scale-105 hover:-translate-y-1 active:scale-95 hover:shadow-gray-500/25"
@@ -3979,7 +4599,8 @@ function App() {
                             {copySuccess ? (
                               <>
                                 <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4" />
-                                <span>Copied!</span>
+                                <span className="hidden sm:inline">Copied!</span>
+                                <span className="sm:hidden">✓</span>
                               </>
                             ) : (
                               <>
@@ -4052,7 +4673,7 @@ function App() {
                         });
                       }
                     }}
-                    className={`fixed bottom-20 lg:bottom-6 right-4 lg:right-6 p-3 rounded-full shadow-lg transition-all duration-300 z-30 ${
+                    className={`fixed bottom-20 right-4 lg:right-6 p-3 rounded-full shadow-lg transition-all duration-300 z-30 ${
                       darkMode
                         ? "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
                         : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
@@ -4064,6 +4685,193 @@ function App() {
                 )}
               </div>
             )}
+
+            {/* Mobile-Optimized Responsive Input - Keyboard Aware */}
+            <div className="fixed bottom-0 left-0 lg:left-80 right-0 z-40 keyboard-aware-input">
+              <div className="relative">
+                <form onSubmit={handleSubmit} className="relative">
+                  {/* Suggestions Dropdown - Positioned Above Input */}
+                  {showSuggestions && suggestions.length > 0 && (
+                    <div
+                      className={`absolute bottom-full left-0 right-0 mb-0 max-h-64 overflow-y-auto border-t shadow-2xl backdrop-blur-xl ${
+                        darkMode
+                          ? "bg-gray-800/95 border-gray-600/50"
+                          : "bg-white/95 border-gray-200/50"
+                      }`}
+                    >
+                      {suggestions.map((suggestion, index) => (
+                        <button
+                          key={suggestion.id}
+                          onClick={() => selectSuggestion(suggestion)}
+                          className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 transition-all duration-200 ${
+                            selectedSuggestionIndex === index
+                              ? darkMode
+                                ? "bg-blue-600/30 text-blue-300"
+                                : "bg-blue-50 text-blue-700"
+                              : darkMode
+                              ? "hover:bg-gray-700/50 text-gray-200"
+                              : "hover:bg-gray-50 text-gray-700"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm truncate">
+                                {suggestion.topic}
+                              </div>
+                              <div
+                                className={`text-xs mt-1 ${
+                                  darkMode ? "text-gray-400" : "text-gray-500"
+                                }`}
+                              >
+                                {
+                                  DIFFICULTY_LEVELS.find(
+                                    (l) => l.value === suggestion.level
+                                  )?.label
+                                }{" "}
+                                •
+                                {new Date(
+                                  suggestion.timestamp
+                                ).toLocaleDateString()}
+                              </div>
+                            </div>
+                            <History className="w-3 h-3 opacity-50 flex-shrink-0 ml-2" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Main Input Container - Mobile Optimized - Minimal Spacing */}
+                  <div
+                    className={`backdrop-blur-xl border-t shadow-2xl transition-all duration-300 ${
+                      darkMode
+                        ? "bg-gray-900/90 border-gray-700/50 shadow-black/50"
+                        : "bg-white/90 border-gray-200/50 shadow-gray-900/20"
+                    }`}
+                  >
+                    {/* Mobile: Stack Layout, Desktop: Horizontal Layout - Minimal Padding */}
+                    <div className="px-2 pt-2 pb-0 sm:px-3 sm:pt-3 sm:pb-1 safe-area-inset-bottom">
+                      {/* Mobile: Level Selector Above Input - Reduced margin */}
+                      <div className="block sm:hidden mb-1.5">
+                        <select
+                          value={level}
+                          onChange={(e) =>
+                            changeLevelWithFeedback(e.target.value, level)
+                          }
+                          className={`w-full px-3 py-2 rounded-xl border text-xs font-medium transition-all duration-300 focus:outline-none focus:ring-0 ${
+                            darkMode
+                              ? "bg-gray-800/60 border-gray-600/50 text-gray-200 focus:border-purple-500/70 focus:bg-gray-800/80"
+                              : "bg-gray-50/60 border-gray-300/50 text-gray-700 focus:border-purple-500/70 focus:bg-white/80"
+                          }`}
+                          disabled={loading}
+                        >
+                          {DIFFICULTY_LEVELS.map((diffLevel) => (
+                            <option
+                              key={diffLevel.value}
+                              value={diffLevel.value}
+                            >
+                              {diffLevel.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Input Row - Minimal bottom padding */}
+                      <div className="flex items-stretch space-x-2 sm:space-x-3 pb-1 sm:pb-2">
+                        {/* Topic Input - Optimized for Mobile */}
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            value={topic}
+                            onChange={(e) => {
+                              setTopic(e.target.value);
+                              updateSuggestions(e.target.value);
+                            }}
+                            onFocus={handleInputFocus}
+                            onBlur={handleInputBlur}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Ask about any concept..."
+                            className={`w-full px-3 sm:px-4 py-2.5 sm:py-2.5 rounded-xl border transition-all duration-300 focus:outline-none focus:ring-0 text-sm sm:text-base ${
+                              darkMode
+                                ? "bg-gray-800/60 border-gray-600/50 text-gray-100 placeholder-gray-400 focus:border-blue-500/70 focus:bg-gray-800/80"
+                                : "bg-gray-50/60 border-gray-300/50 text-gray-900 placeholder-gray-500 focus:border-blue-500/70 focus:bg-white/80"
+                            }`}
+                            disabled={loading}
+                            style={{
+                              fontSize: "16px", // Prevents zoom on iOS
+                            }}
+                          />
+
+                          {/* Status Indicator - Mobile Optimized */}
+                          <div className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2">
+                            {loading ? (
+                              <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                            ) : topic.trim() ? (
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  darkMode ? "bg-green-400" : "bg-green-500"
+                                } animate-pulse`}
+                              ></div>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        {/* Desktop: Level Selector Inline */}
+                        <select
+                          value={level}
+                          onChange={(e) =>
+                            changeLevelWithFeedback(e.target.value, level)
+                          }
+                          className={`hidden sm:block px-3 py-2.5 rounded-xl border text-xs font-medium transition-all duration-300 focus:outline-none focus:ring-0 min-w-[100px] ${
+                            darkMode
+                              ? "bg-gray-800/60 border-gray-600/50 text-gray-200 focus:border-purple-500/70 focus:bg-gray-800/80"
+                              : "bg-gray-50/60 border-gray-300/50 text-gray-700 focus:border-purple-500/70 focus:bg-white/80"
+                          }`}
+                          disabled={loading}
+                        >
+                          {DIFFICULTY_LEVELS.map((diffLevel) => (
+                            <option
+                              key={diffLevel.value}
+                              value={diffLevel.value}
+                            >
+                              {diffLevel.label}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Send Button - Mobile Optimized with Reduced Height */}
+                        <button
+                          type="submit"
+                          disabled={loading || !topic.trim()}
+                          className={`h-10 sm:h-auto px-3 sm:px-6 py-2.5 sm:py-2.5 rounded-xl font-semibold text-white transition-all duration-300 transform flex items-center justify-center space-x-1 sm:space-x-2 text-sm min-w-[44px] sm:min-w-auto ${
+                            loading || !topic.trim()
+                              ? "bg-gray-400 cursor-not-allowed opacity-50"
+                              : darkMode
+                              ? "bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-500 hover:via-purple-500 hover:to-indigo-500 hover:scale-105 shadow-lg hover:shadow-blue-500/25 active:scale-95"
+                              : "bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 hover:from-blue-400 hover:via-purple-400 hover:to-indigo-400 hover:scale-105 shadow-lg hover:shadow-purple-500/25 active:scale-95"
+                          }`}
+                          aria-label="Send message"
+                        >
+                          {loading ? (
+                            <>
+                              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                              <span className="hidden sm:inline ml-1">
+                                Generating
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4" />
+                              <span className="hidden sm:inline">Send</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -4166,87 +4974,142 @@ function App() {
               ) : (
                 <div className="p-4 space-y-3">
                   {localHistory.map((item, index) => (
-                    <button
+                    <div
                       key={item.id}
-                      onClick={() => loadFromHistory(item)}
-                      className={`w-full text-left p-4 rounded-xl transition-all duration-200 group border ${
+                      className={`rounded-xl transition-all duration-200 border ${
                         darkMode
-                          ? "bg-gray-800 hover:bg-gray-700 border-gray-700 hover:border-indigo-500/50"
-                          : "bg-gray-50 hover:bg-white border-gray-200 hover:border-indigo-300 hover:shadow-md"
+                          ? "bg-gray-800 border-gray-700"
+                          : "bg-gray-50 border-gray-200"
                       }`}
                     >
-                      <div className="flex items-center space-x-3">
-                        <div
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                            darkMode ? "bg-indigo-500/20" : "bg-indigo-100"
-                          }`}
-                        >
-                          <span
-                            className={`text-sm font-bold ${
-                              darkMode ? "text-indigo-400" : "text-indigo-600"
+                      {/* Main content - clickable to load */}
+                      <button
+                        onClick={() => loadFromHistory(item)}
+                        className={`w-full text-left p-4 transition-all duration-200 group rounded-xl ${
+                          darkMode
+                            ? "hover:bg-gray-700 hover:border-indigo-500/50"
+                            : "hover:bg-white hover:border-indigo-300 hover:shadow-md"
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              darkMode ? "bg-indigo-500/20" : "bg-indigo-100"
                             }`}
                           >
-                            {String(index + 1).padStart(2, "0")}
-                          </span>
+                            <span
+                              className={`text-sm font-bold ${
+                                darkMode ? "text-indigo-400" : "text-indigo-600"
+                              }`}
+                            >
+                              {String(index + 1).padStart(2, "0")}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <p
+                                className={`font-semibold capitalize truncate ${
+                                  darkMode
+                                    ? "text-white group-hover:text-indigo-400"
+                                    : "text-gray-900 group-hover:text-indigo-600"
+                                }`}
+                              >
+                                {item.topic}
+                              </p>
+                              <ChevronRight
+                                className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${
+                                  darkMode ? "text-indigo-400" : "text-indigo-500"
+                                }`}
+                              />
+                            </div>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span
+                                className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
+                                  item.level === "eli5"
+                                    ? darkMode
+                                      ? "bg-pink-500/20 text-pink-400"
+                                      : "bg-pink-100 text-pink-700"
+                                    : item.level === "student"
+                                    ? darkMode
+                                      ? "bg-blue-500/20 text-blue-400"
+                                      : "bg-blue-100 text-blue-700"
+                                    : item.level === "graduate"
+                                    ? darkMode
+                                      ? "bg-purple-500/20 text-purple-400"
+                                      : "bg-purple-100 text-purple-700"
+                                    : darkMode
+                                    ? "bg-emerald-500/20 text-emerald-400"
+                                    : "bg-emerald-100 text-emerald-700"
+                                }`}
+                              >
+                                {DIFFICULTY_LEVELS.find(
+                                  (l) => l.value === item.level
+                                )?.label || item.level}
+                              </span>
+                              <span
+                                className={`text-xs ${
+                                  darkMode ? "text-gray-400" : "text-gray-500"
+                                }`}
+                              >
+                                {new Date(item.timestamp).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    month: "short",
+                                    day: "numeric",
+                                  }
+                                )}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <p
-                              className={`font-semibold capitalize truncate ${
-                                darkMode
-                                  ? "text-white group-hover:text-indigo-400"
-                                  : "text-gray-900 group-hover:text-indigo-600"
-                              }`}
-                            >
-                              {item.topic}
-                            </p>
-                            <ChevronRight
-                              className={`w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity ${
-                                darkMode ? "text-indigo-400" : "text-indigo-500"
-                              }`}
-                            />
-                          </div>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span
-                              className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
-                                item.level === "eli5"
-                                  ? darkMode
-                                    ? "bg-pink-500/20 text-pink-400"
-                                    : "bg-pink-100 text-pink-700"
-                                  : item.level === "student"
-                                  ? darkMode
-                                    ? "bg-blue-500/20 text-blue-400"
-                                    : "bg-blue-100 text-blue-700"
-                                  : item.level === "graduate"
-                                  ? darkMode
-                                    ? "bg-purple-500/20 text-purple-400"
-                                    : "bg-purple-100 text-purple-700"
-                                  : darkMode
-                                  ? "bg-emerald-500/20 text-emerald-400"
-                                  : "bg-emerald-100 text-emerald-700"
-                              }`}
-                            >
-                              {DIFFICULTY_LEVELS.find(
-                                (l) => l.value === item.level
-                              )?.label || item.level}
-                            </span>
-                            <span
-                              className={`text-xs ${
-                                darkMode ? "text-gray-400" : "text-gray-500"
-                              }`}
-                            >
-                              {new Date(item.timestamp).toLocaleDateString(
-                                "en-US",
-                                {
-                                  month: "short",
-                                  day: "numeric",
+                      </button>
+                      
+                      {/* Action buttons */}
+                      <div className={`px-4 pb-3 border-t ${
+                        darkMode ? "border-gray-700" : "border-gray-200"
+                      }`}>
+                        <div className="flex items-center justify-end space-x-2 pt-3">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              // Use a more mobile-friendly confirmation
+                              const confirmDelete = () => {
+                                deleteHistoryItem(item);
+                              };
+                              
+                              // For mobile, use a different confirmation approach
+                              if (window.innerWidth <= 768) {
+                                // Mobile: Use a simple confirm with better touch handling
+                                if (confirm(`Delete "${item.topic}" from history?`)) {
+                                  confirmDelete();
                                 }
-                              )}
-                            </span>
-                          </div>
+                              } else {
+                                // Desktop: Use standard confirmation
+                                if (window.confirm(`Are you sure you want to delete "${item.topic}" from history?`)) {
+                                  confirmDelete();
+                                }
+                              }
+                            }}
+                            className={`
+                              min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium 
+                              transition-all duration-200 flex items-center space-x-2
+                              touch-manipulation select-none
+                              active:scale-95 active:transform
+                              ${
+                              darkMode
+                                ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 active:bg-red-500/40 border border-red-500/30"
+                                : "bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200 border border-red-200"
+                            }`}
+                            title="Delete from history"
+                            type="button"
+                          >
+                            <Trash2 className="w-4 h-4 flex-shrink-0" />
+                            <span className="hidden sm:inline">Delete</span>
+                          </button>
                         </div>
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               )}
